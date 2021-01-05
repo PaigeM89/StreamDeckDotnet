@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp3.1;net461</TargetFrameworks>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <GenerateProgramFile>false</GenerateProgramFile>
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="AssemblyInfo.fs" />

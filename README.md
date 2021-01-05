@@ -1,6 +1,9 @@
 # StreamDeckDotnet
 
-[Enter useful description for StreamDeckDotnet]
+
+**Notes To Self**
+
+Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugsin/`
 
 ---
 
