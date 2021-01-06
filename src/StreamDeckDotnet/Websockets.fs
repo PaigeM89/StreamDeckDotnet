@@ -13,6 +13,17 @@ open FSharp.Control.Tasks.Affine
 
 module Websockets =
 
+  type StreamDeckSocketArgs = {
+    Port : int
+    Id : Guid
+    RegisterEvent : string
+    Info : string
+  }
+
+  type IWebSocket =
+    abstract member SendAsync : string -> Async<unit>
+    abstract member ReceiveHandler : string -> Async<unit>
+
   let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Websockets")
 
   let inline private runTask (t : Task) = t |> Async.AwaitTask
@@ -23,10 +34,11 @@ module Websockets =
 
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
-  type StreamDeckConnection(port : int, id : Guid, registerEvent : string, info : string) =
+  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<unit>) =
       let mutable _websocket : ClientWebSocket = new ClientWebSocket()
       let _cancelSource = new CancellationTokenSource()
       let _semaphore = new SemaphoreSlim(1)
+      let port = args.Port
 
       let lockAsync() = _semaphore.WaitAsync() |> Async.AwaitTask
       let release() = _semaphore.Release()
@@ -48,7 +60,7 @@ module Websockets =
             do release |> ignore
         }
 
-      member this.SendAsync(text : string) = async {
+      member this.SendToSocketAsync(text : string) = async {
         try
           if _websocket.State = WebSocketState.Open then
             do! _semaphore.WaitAsync() |> Async.AwaitTask
@@ -71,7 +83,11 @@ module Websockets =
             if websocketResult.MessageType = WebSocketMessageType.Text then
               textBuf.Append(Encoding.UTF8.GetString(buf, 0, websocketResult.Count)) |> ignore
               printfn "Web socket recieved: %s" (string textBuf)
-              textBuf.Clear() |> ignore
+
+              if websocketResult.EndOfMessage then 
+                do! receiveHandler (string textBuf)
+                textBuf.Clear() |> ignore
+
               ()
             else
               ()
@@ -86,7 +102,7 @@ module Websockets =
             if _websocket.State <> WebSocketState.Open then
               ()
             else
-              do! this.SendAsync("response from web socket!")
+              do! this.SendToSocketAsync("response from web socket!")
             do! this.Receive()
             return ()
           }
@@ -97,3 +113,7 @@ module Websockets =
 
       member this.Stop() =
         _cancelSource.Cancel()
+
+      interface IWebSocket with
+        member this.SendAsync (str : string) = this.SendToSocketAsync str
+        member this.ReceiveHandler (str : string) = () |> Async.lift

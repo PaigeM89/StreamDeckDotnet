@@ -56,6 +56,7 @@ let testsCodeGlob =
 
 let srcGlob =__SOURCE_DIRECTORY__  @@ "src/**/*.??proj"
 let testsGlob = __SOURCE_DIRECTORY__  @@ "tests/**/*.??proj"
+let exampleGlob = __SOURCE_DIRECTORY__ @@ "ExampleProject/**/*.??proj"
 
 let srcAndTest =
     !! srcGlob
@@ -294,6 +295,7 @@ let clean _ =
 
     !! srcGlob
     ++ testsGlob
+    ++ exampleGlob
     |> Seq.collect(fun p ->
         ["bin";"obj"]
         |> Seq.map(fun sp -> IO.Path.GetDirectoryName p @@ sp ))
@@ -428,6 +430,35 @@ let dotnetBuild ctx =
                 |> DotNet.Options.withAdditionalArgs args
 
         }) sln
+
+let buildExample ctx =
+    let proj = "ExampleProject/Example/Example.fsproj"
+    [proj]
+    |> Seq.map(fun dir -> fun () ->
+        let args =
+            [
+            ] |> String.concat " "
+        DotNet.restore(fun c ->
+            { c with
+                Common =
+                    c.Common
+                    |> DotNet.Options.withCustomParams
+                        (Some(args))
+            }) dir)
+    |> Seq.iter(retryIfInCI 10)
+    let args =
+        [
+            sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
+            "--no-restore"
+        ]
+    DotNet.build(fun c ->
+        { c with
+            Configuration = configuration (ctx.Context.AllExecutingTargets)
+            Common =
+                c.Common
+                |> DotNet.Options.withAdditionalArgs args
+
+        }) proj
 
 let fsharpAnalyzers ctx =
     let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
@@ -670,6 +701,7 @@ Target.create "UpdateChangelog" updateChangelog
 Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this in the dependency chain
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
+Target.create "BuildExample" buildExample
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
 Target.create "GenerateCoverageReport" generateCoverageReport
@@ -716,6 +748,8 @@ Target.create "ReleaseDocs" releaseDocs
 
 "ReplaceTemplateFilesNamespace"
     ==> "DotnetBuild"
+
+"DotnetBuild" ==> "BuildExample"
 
 "DotnetRestore"
     ==> "DotnetBuild"

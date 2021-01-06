@@ -1,0 +1,6 @@
+FSharp.Core
+Microsoft.SourceLink.GitHub
+Microsoft.NETFramework.ReferenceAssemblies
+Microsoft.Extensions.Logging
+Microsoft.Extensions.Logging.Console
+Microsoft.Extensions.Logging.Debug

@@ -19,8 +19,9 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Task.fs" />
     <Compile Include="Library.fs" />
-    <Compile Include="Websockets.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="Websockets.fs" />
+    <Compile Include="Core.fs" />
     <Compile Include="MessageRouting.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
