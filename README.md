@@ -5,6 +5,8 @@
 
 Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugsin/`
 
+Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
+
 ---
 
 ## Builds

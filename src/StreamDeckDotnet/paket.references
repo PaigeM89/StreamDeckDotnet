@@ -1,5 +1,15 @@
 FSharp.Core
 Microsoft.SourceLink.GitHub
 Microsoft.NETFramework.ReferenceAssemblies
+Microsoft.Extensions.Logging
+Microsoft.Extensions.Logging.Console
+Microsoft.Extensions.Logging.Debug
+
 TaskBuilder.fs
 Ply
+System.Text.Json
+Thoth.Json.Net
+Newtonsoft.Json
+FsToolkit.ErrorHandling
+
+File:FsLibLog.fs

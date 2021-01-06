@@ -319,6 +319,27 @@ let dotnetRestore _ =
             }) dir)
     |> Seq.iter(retryIfInCI 10)
 
+let fslibLogGlobs = !! "paket-files/TheAngryByrd/FsLibLog/**/FsLibLog*.fs"
+
+let replacements =
+    [ "FsLibLog\\n", "StreamDeckDotnet.Logging\n"
+      "FsLibLog\\.", "StreamDeckDotnet.Logging." ]
+
+let ``ReplaceTemplateFilesNamespace should run`` = lazy (
+  let files =
+    fslibLogGlobs
+    |> Seq.map(IO.File.ReadAllText)
+  files |> Seq.exists(fun f -> replacements |> Seq.exists(fun (strToReplace, _) -> System.Text.RegularExpressions.Regex.IsMatch(f, strToReplace)))
+)
+
+Target.create "ReplaceTemplateFilesNamespace" <| fun _ ->
+  if ``ReplaceTemplateFilesNamespace should run``.Value then
+    fslibLogGlobs  |> Seq.iter(Trace.tracefn "Replacing namespaces in %s")
+    replacements
+    |> List.iter (fun (``match``, replace) ->
+      Shell.regexReplaceInFilesWithEncoding ``match`` replace System.Text.Encoding.UTF8 (fslibLogGlobs)
+    )
+
 let updateChangelog ctx =
     let description, unreleasedChanges =
         match changelog.Unreleased with
@@ -678,6 +699,7 @@ Target.create "ReleaseDocs" releaseDocs
 // Only call GenerateAssemblyInfo if Publish was in the call chain
 // Ensure GenerateAssemblyInfo is called after DotnetRestore and before DotnetBuild
 "DotnetRestore" ?=> "GenerateAssemblyInfo"
+"DotnetRestore" ==> "ReplaceTemplateFilesNamespace"
 "GenerateAssemblyInfo" ?=> "DotnetBuild"
 "GenerateAssemblyInfo" ==> "PublishToNuGet"
 
@@ -692,6 +714,8 @@ Target.create "ReleaseDocs" releaseDocs
 "DotnetPack" ?=> "BuildDocs"
 "GenerateCoverageReport" ?=> "ReleaseDocs"
 
+"ReplaceTemplateFilesNamespace"
+    ==> "DotnetBuild"
 
 "DotnetRestore"
     ==> "DotnetBuild"

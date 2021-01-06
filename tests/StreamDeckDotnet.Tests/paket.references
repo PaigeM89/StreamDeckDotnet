@@ -4,3 +4,5 @@ Microsoft.NET.Test.Sdk
 YoloDev.Expecto.TestSdk
 altcover
 Microsoft.NETFramework.ReferenceAssemblies
+System.Text.Json
+Thoth.Json.Net
