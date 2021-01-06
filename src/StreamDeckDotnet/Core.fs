@@ -69,20 +69,21 @@ module Core =
   let SYSTEM_WAKE_UP : ActionHandler = actionReceived (validateAction EventNames.SystemDidWakeUp)
 
   let KEY_UP : ActionHandler = actionReceived (validateAction EventNames.KeyDown)
-  //let KEY_UP 
 
   let addLog (msg : string) (ctx : ActionContext) =
     let log = Events.createLogEvent msg
     Context.addSendEvent log ctx
 
   let log (msg : string) : ActionHandler =
-    fun (_ : ActionFunc) (ctx : ActionContext) ->
+    fun (next : ActionFunc) (ctx : ActionContext) ->
       addLog msg ctx
+      next ctx
   
   let log2 (msg : string) : ActionHandler =
     let log = Events.createLogEvent msg
-    fun (_ : ActionFunc) (ctx: ActionContext) ->
+    fun (next : ActionFunc) (ctx: ActionContext) ->
       Context.addSendEvent log ctx
+      next ctx
 
   let flow (_ : ActionFunc) (ctx: ActionContext) = Context.flow ctx
 

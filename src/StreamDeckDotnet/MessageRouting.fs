@@ -71,7 +71,8 @@ module Engine =
     //first decode into an ActionReceived
     let! actionReceived = Context.decodeActionReceived msg
     //then build the context
-    let ctx = Context.fromActionReceived actionReceived
+    let ctx = Context.ActionContext(actionReceived)
+    //Context.fromActionReceived actionReceived
     
     //now match the context to the known routes
     let t = fun ctx -> ctx |> Some |> Async.lift
@@ -104,10 +105,13 @@ module TestCode =
   open ActionRouting
 
   let myAction (event : Events.EventReceived) (next: ActionFunc) (ctx : ActionContext) = async {
-    let! thing = Core.addLog $"in My Action handler, with event {event}" ctx
-    match thing with
-    | Some ctx -> return! Core.flow next ctx
-    | None -> return! Core.flow next ctx
+    Core.addLog $"in My Action handler, with event {event}" ctx
+    return! Core.flow next ctx
+  }
+
+  let keyUpEvent (event : Types.Received.KeyPayload) (next : ActionFunc) (ctx: ActionContext) = async {
+    Core.addLog $"In key up event handler, with event payload {event}" ctx
+    return! Core.flow next ctx
   }
 
   let errorHandler (err : ActionFailure) : ActionHandler = Core.log ($"in error handler, error: {err}")
@@ -115,13 +119,10 @@ module TestCode =
   let routes =
     let keydownroute = 
       action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEventPayload errorHandler myAction
-    // let keyUpRoute = 
-    //   action2 Core.KEY_UP >=> Core.log "In key up"
     let wakeUpRoute = 
       action Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
     choose [
       keydownroute
-      //keyUpRoute
       wakeUpRoute
     ]
 

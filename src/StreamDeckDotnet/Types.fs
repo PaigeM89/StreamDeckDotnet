@@ -148,44 +148,37 @@ module Context =
   let decodeActionReceived (str : string) =
     Decode.fromString ActionReceived.Decoder str
 
-  type ActionContext = {
-    ActionReceived : ActionReceived
+  type ActionContext(actionReceived : ActionReceived) =
+    let mutable _eventReceived : Events.EventReceived option = None
+    let mutable _eventsToSend : Events.EventSent list option = None
 
-    /// The event received from the stream deck, if any.
-    EventReceived : Events.EventReceived option
+    member this.ActionReceived = actionReceived
+    member this.EventReceived = _eventReceived
 
-    /// The event to send to the stream deck, if any.
-    EventsToSend : Events.EventSent list option
-  } with
-    member this.TryBindEventAsync =
-      asyncResult {
-        let decoder = 
-          let event = this.ActionReceived.Event.ToLowerInvariant()
-          match event with
-          | Events.EventNames.KeyDown ->
-            let func = Types.tryDecodePayload Types.Received.KeyPayload.Decoder Events.EventReceived.KeyDown
-            fun p -> decode (PayloadRequired (func, p))
-          | Events.EventNames.SystemDidWakeUp ->
-            fun _ -> decode (NoPayloadRequired Events.SystemWakeUp)
-          | _ ->
-            fun _ -> UnknownEventType event |> Error
-        return! decoder this.ActionReceived.Payload
-      }
-
-  let fromActionReceived ar =
-    {
-      ActionReceived = ar
-      EventReceived = None
-      EventsToSend = None
+    member this.TryBindEventAsync = asyncResult {
+      let decoder = 
+        let event = actionReceived.Event.ToLowerInvariant()
+        match event with
+        | Events.EventNames.KeyDown ->
+          let func = Types.tryDecodePayload Types.Received.KeyPayload.Decoder Events.EventReceived.KeyDown
+          fun p -> decode (PayloadRequired (func, p))
+        | Events.EventNames.SystemDidWakeUp ->
+          fun _ -> decode (NoPayloadRequired Events.SystemWakeUp)
+        | _ ->
+          fun _ -> UnknownEventType event |> Error
+      return! decoder actionReceived.Payload
     }
 
-  let addSendEvent e ctx = async {
-    match ctx.EventsToSend with
-    | None ->
-      return { ctx with EventsToSend = Some [e] } |> Some
-    | Some x ->
-      return { ctx with EventsToSend = Some (e :: x) } |> Some
-  }
+    member this.AddSendEvent e =
+      match _eventsToSend with
+      | None ->
+        _eventsToSend <- Some [e]
+      | Some es ->
+        _eventsToSend <- Some (e :: es)
+
+  let addSendEvent e (ctx : ActionContext) = 
+    ctx.AddSendEvent e
 
   let flow (ctx : ActionContext) = Some ctx |> Async.lift 
+
 
