@@ -7,6 +7,8 @@ Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugsin/`
 
 Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
 
+elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
+
 ---
 
 ## Builds

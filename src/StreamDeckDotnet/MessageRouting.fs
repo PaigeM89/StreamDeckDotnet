@@ -69,7 +69,7 @@ module Engine =
   // handles the raw json message from the web socket
   let socketMsgHandlerR (msg : string) (routes: Core.ActionHandler) = asyncResult {
     //first decode into an ActionReceived
-    let! actionReceived = Context.decodeActionReceived msg
+    let! actionReceived = Types.decodeActionReceived msg
     //then build the context
     let ctx = Context.ActionContext(actionReceived)
     //Context.fromActionReceived actionReceived
@@ -114,13 +114,30 @@ module TestCode =
     return! Core.flow next ctx
   }
 
+  let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : ActionFunc) (ctx: ActionContext) = async {
+    Core.addLog $"In settings received handler, with event payload {settings}" ctx
+    return! Core.flow next ctx
+  }
+
   let errorHandler (err : ActionFailure) : ActionHandler = Core.log ($"in error handler, error: {err}")
+  let bindingErrorHandler (e) : ActionHandler = Core.log($"In binding error handler, got event {e}")
+
+  let settingsT = (Events.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
+
+  let settingsT2 = (Events.EventNames.DidReceiveSettings, fun v -> v |> function | Events.EventReceived.DidReceiveSettings _ -> true | _ -> false)
 
   let routes =
+    let t2 =
+      action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
+
     let keydownroute = 
-      action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEventPayload errorHandler myAction
+      action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
+    let keyUpRoute =
+      action Events.EventNames.KeyUp >=> Core.log "in key up route" >=> tryBindEvent errorHandler keyUpEvent >=> Core.bindEventPayload
     let wakeUpRoute = 
       action Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
+    let settingsReceivedRoute =
+      actionWithBinding settingsT2 >=> Core.log "did receive settings" >=> tryBindEventStrict errorHandler settingsReceivedHandler
     choose [
       keydownroute
       wakeUpRoute
