@@ -34,7 +34,7 @@ module Websockets =
 
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
-  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<unit>) =
+  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<Context.ActionContext>) =
       let mutable _websocket : ClientWebSocket = new ClientWebSocket()
       let _cancelSource = new CancellationTokenSource()
       let _semaphore = new SemaphoreSlim(1)
@@ -49,6 +49,12 @@ module Websockets =
         else
           ()
       }
+
+      let eventsEncoded (ctx : Context.ActionContext) =
+        ctx.GetEventsToSend()
+        |> List.map (fun payloads -> 
+          payloads.Encode ctx.ActionReceived.Context ctx.ActionReceived.Device
+        )
 
       member this.DisconnectAsync() = async {
           try
@@ -73,6 +79,12 @@ module Websockets =
           _semaphore.Release() |> ignore
       }
 
+      member this.SendAllToSocketAsync(payloads : string list) = async {
+        let allAsyncs = payloads |> List.map this.SendToSocketAsync
+        do! Async.Sequential allAsyncs |> Async.Ignore
+        return ()
+      }
+
       member this.Receive() =
         let buf = Array.zeroCreate (BufferSize)
         let arrayBuf = ArraySegment<_>(buf)
@@ -85,9 +97,9 @@ module Websockets =
               printfn "Web socket recieved: %s" (string textBuf)
 
               if websocketResult.EndOfMessage then 
-                do! receiveHandler (string textBuf)
+                let! ctx = receiveHandler (string textBuf)
+                do! ctx |> eventsEncoded |> this.SendAllToSocketAsync
                 textBuf.Clear() |> ignore
-
               ()
             else
               ()

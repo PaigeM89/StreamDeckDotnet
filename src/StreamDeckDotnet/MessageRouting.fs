@@ -54,6 +54,8 @@ module MessageRoutingBuilder =
 module Engine =
   open MessageRoutingBuilder
   open FsToolkit.ErrorHandling
+  open Context
+  open Core
 
   let mapActions (routes : ActionRoute list) =
     routes
@@ -71,28 +73,30 @@ module Engine =
     //first decode into an ActionReceived
     let! actionReceived = Types.decodeActionReceived msg
     //then build the context
-    let ctx = Context.ActionContext(actionReceived)
-    //Context.fromActionReceived actionReceived
+    let ctx = ActionContext(actionReceived)
     
     //now match the context to the known routes
-    let t = fun ctx -> ctx |> Some |> Async.lift
-    let thing = routes (t) ctx
+    let t = fun ctx -> AsyncOption.retn ctx
+    //let thing = routes (t) ctx
 
-    return! () |> Ok
+    match! routes t ctx with
+    | Some ctx -> return ctx
+    | None -> return ctx
   }
 
-  let socketMsgHandler (msg : string) (routes: Core.ActionHandler) = async {
+  let socketMsgHandler (routes: Core.ActionHandler)  (msg : string) = async {
     let! r = socketMsgHandlerR msg routes
     match r with
-    | Ok x -> x
-    | Error e -> failwithf "%A" e
-    return ()
+    | Ok x -> return x
+    | Error e -> return failwithf "%A" e
   }
 
-  let compileFunction str = () |> Async.lift
+  let handleMatch (matchFunc: ActionContext -> Events.EventReceived -> ActionHandler) = 
+    ActionRouting.matcher matchFunc
 
-  type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.ActionHandler) = 
-    let _socket = Websockets.StreamDeckConnection(args, compileFunction)
+  type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.ActionHandler) =
+    let msgHandler = socketMsgHandler handler
+    let _socket = Websockets.StreamDeckConnection(args, msgHandler)
     
     member this.Run() = _socket.Run()
 
@@ -103,6 +107,7 @@ module TestCode =
   open Websockets
   //open MessageRoutingBuilder
   open ActionRouting
+  open ActionRouting.PayloadRouting
 
   let myAction (event : Events.EventReceived) (next: ActionFunc) (ctx : ActionContext) = async {
     Core.addLog $"in My Action handler, with event {event}" ctx
@@ -124,24 +129,41 @@ module TestCode =
 
   let settingsT = (Events.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
 
-  let settingsT2 = (Events.EventNames.DidReceiveSettings, fun v -> v |> function | Events.EventReceived.DidReceiveSettings _ -> true | _ -> false)
+  let keyPayloadStateCheck targetState (payload : Types.Received.KeyPayload) =
+    payload.State = targetState
+
+  // let keyUpRoutes = choose [
+  //   state (fun s -> s = 0)
+  // ]
 
   let routes =
     let t2 =
       action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
 
-    let keydownroute = 
+    // let t3 =
+    //   action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEventPipeline errorHandler >=> Core.log "more logging" >=> keyUpEvent
+
+    let keydownroute =
       action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
-    let keyUpRoute =
-      action Events.EventNames.KeyUp >=> Core.log "in key up route" >=> tryBindEvent errorHandler keyUpEvent >=> Core.bindEventPayload
-    let wakeUpRoute = 
+    let wakeUpRoute =
       action Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
-    let settingsReceivedRoute =
-      actionWithBinding settingsT2 >=> Core.log "did receive settings" >=> tryBindEventStrict errorHandler settingsReceivedHandler
+    
     choose [
       keydownroute
       wakeUpRoute
     ]
+
+  let matchFuction (ctx : ActionContext) event =
+    match event with
+    | Events.EventReceived.KeyDown payload ->
+      () |> Async.lift
+    | Events.EventReceived.DidReceiveSettings payload ->
+      () |> Async.lift
+    | Events.EventReceived.SystemWakeUp ->
+      () |> Async.lift
+    | _ ->
+      Core.addLog $"Unhandled event type:{event}" ctx
+      () |> Async.lift
 
   let run() =
     let args = {

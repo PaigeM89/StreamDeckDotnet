@@ -17,9 +17,10 @@
       <Link>paket-files/FsLibLog.fs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Task.fs" />
+    <Compile Include="Helpers.fs" />
     <Compile Include="Library.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="Context.fs" />
     <Compile Include="Websockets.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="MessageRouting.fs" />

@@ -85,24 +85,37 @@ module ActionRouting =
   open Core
   open Context
 
-  //todo: state router
+  /// Routing that is only available once we have determined the payload type
+  module PayloadRouting = 
+    let multiAction() = true
+
+    //todo: state router
+    let inline state (stateCheck : int -> 'a -> bool) =
+      fun next ctx ->
+        next ctx
+
+  let matcher matchFunc =
+    let logErrorHandler err =
+      Core.log $"Error handling event: {err}"
+    fun next (ctx: ActionContext) ->
+      tryBindEvent logErrorHandler (matchFunc ctx) next ctx
 
   let action (eventName : string) : ActionHandler =
     fun (next : ActionFunc) (ctx : Context.ActionContext) ->
       let validate = Core.validateAction eventName
       Core.actionReceived validate next ctx
   
-  let actionWithBinding (eventName : string, eventType : System.Type) : ActionHandler =
-    fun (next : ActionFunc) (ctx : Context.ActionContext) ->
-      let validate = Core.validateAction eventName
-      ctx.SetEventType(eventType)
-      Core.actionReceived validate next ctx
+  // let actionWithBinding (eventName : string, eventType : System.Type) : ActionHandler =
+  //   fun (next : ActionFunc) (ctx : Context.ActionContext) ->
+  //     let validate = Core.validateAction eventName
+  //     ctx.SetEventType(eventType)
+  //     Core.actionReceived validate next ctx
   
-  let actionForType (eventName : string, eventType : System.Type) : ActionHandler =
-    fun (next : ActionFunc) (ctx : Context.ActionContext) ->
-      let validate = Core.validateAction eventName
-      ctx.SetEventType(eventType)
-      Core.actionReceived validate next ctx
+  // let actionForType (eventName : string, eventType : System.Type) : ActionHandler =
+  //   fun (next : ActionFunc) (ctx : Context.ActionContext) ->
+  //     let validate = Core.validateAction eventName
+  //     ctx.SetEventType(eventType)
+  //     Core.actionReceived validate next ctx
 
   let tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler =
     fun next ctx -> 
@@ -113,19 +126,26 @@ module ActionRouting =
         | _ -> bindingErrorHandler e next ctx
       tryBindEvent decodingErrorHandler validatePayload next ctx
 
-  let keyUpAction 
-        (interimPipeline : (ActionFunc -> Context.ActionContext -> ActionFuncResult) option)
-        decodingErrorHandler
-        bindingErrorHandler
-        successHandler : ActionHandler =
-    match interimPipeline with
-    | Some interim ->
-        action Events.EventNames.KeyUp >=> interim >=> tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler
-    | None -> 
-        action Events.EventNames.KeyUp >=> tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler
-
+  // let keyUpAction 
+  //       (interimPipeline : (ActionFunc -> Context.ActionContext -> ActionFuncResult) option)
+  //       decodingErrorHandler
+  //       bindingErrorHandler
+  //       successHandler : ActionHandler =
+  //   match interimPipeline with
+  //   | Some interim ->
+  //       action Events.EventNames.KeyUp >=> interim >=> tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler
+  //   | None -> 
+  //       action Events.EventNames.KeyUp >=> tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler
 
   let tryBindKeyDownEvent (errorHandler : Context.ActionFailure -> ActionHandler) (successHandler : Types.Received.KeyPayload -> ActionHandler) =
+    fun next (ctx : ActionContext) ->
+      let filter (e : Events.EventReceived)  = 
+        match e with
+        | Events.EventReceived.KeyDown payload -> successHandler payload
+        | _ -> errorHandler (Context.ActionFailure.WrongEvent ((e.GetName()), Events.EventNames.KeyDown))
+      tryBindEvent errorHandler filter next ctx
+
+  let tryBindKeyDownEventPipeline (errorHandler : Context.ActionFailure -> ActionHandler) (successHandler : Types.Received.KeyPayload -> ActionHandler) =
     fun next (ctx : ActionContext) ->
       let filter (e : Events.EventReceived)  = 
         match e with

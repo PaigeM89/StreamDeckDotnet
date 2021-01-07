@@ -22,7 +22,7 @@ module internal Async =
     return match result with
            | Choice1Of2 value -> value
            | Choice2Of2 exn -> raise exn
-}
+  }
 
 module internal Logger =
   open StreamDeckDotnet.Logging
