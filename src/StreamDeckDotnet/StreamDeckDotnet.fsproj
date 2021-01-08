@@ -24,6 +24,7 @@
     <Compile Include="Websockets.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="MessageRouting.fs" />
+    <Compile Include="ActionRouting.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

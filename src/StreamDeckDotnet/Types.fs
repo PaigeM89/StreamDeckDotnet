@@ -111,7 +111,7 @@ module Types =
       ]
 
     type LogMessagePayload = {
-      Message : JObject
+      Message : JValue
     } with
         member this.Encode context device =
           let payload = [
@@ -161,6 +161,8 @@ module Events =
     [<Literal>]
     let SystemDidWakeUp = "systemDidWakeUp"
 
-  let createLogEvent (msg : string) = 
-    let payload = { Types.Sent.LogMessagePayload.Message = JObject(msg) }
+  let createLogEvent (msg : string) =
+    printfn "log message is %s" msg
+    let payload = { Types.Sent.LogMessagePayload.Message = JValue(msg) }
+    printfn "after payload assignment, payload is %A" payload
     LogMessage payload

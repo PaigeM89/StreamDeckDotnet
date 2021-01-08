@@ -9,6 +9,8 @@ Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob
 
 elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
 
+routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=aspnetcore-5.0#routing-basics
+
 ---
 
 ## Builds
