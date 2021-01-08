@@ -14,10 +14,11 @@ module ActionRouting =
       fun next ctx ->
         next ctx
 
-    /// Accepts a function that takes the action context and validates if the action route is valid.
-    let appState (stateCheck: ActionContext -> bool) =
-      fun next ctx ->
-        next ctx
+
+  /// Accepts a function that takes the action context and validates if the action route is valid.
+  let appState (stateCheck: ActionContext -> bool) =
+    fun next ctx ->
+      next ctx
 
   let matcher matchFunc =
     let logErrorHandler err =
@@ -84,7 +85,6 @@ module Engine =
   //   )
 
   let inspectRoute (handler : RequestHandler) next (ctx : ActionContext) =
-    //let next = fun (ctx : ActionContext) ->  Some ctx |> Async.lift
     let thing = next ctx |> Async.RunSynchronously
     match thing with
     | Some ctx -> 

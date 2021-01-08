@@ -63,7 +63,8 @@ module RoutingEngineTests =
                 | None -> failwith "Did not find context when it should have"
             testCase "Single route returns an event to write" <| fun _ ->
                 let ctx = withAction ""
-                let output = inspectRoute TestRoutes.basicRoute next ctx |> Async.RunSynchronously
+                let route = action "action" >=> Core.log "node1"  >=> Core.log "node2"
+                let output = inspectRoute route next ctx |> Async.RunSynchronously
                 match output with
                 | Some ctx ->
                     Expect.equal (Seq.length (ctx.GetEventsToSend())) 1 "Should have created a single event to send"
