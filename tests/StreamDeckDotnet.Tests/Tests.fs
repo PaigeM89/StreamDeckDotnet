@@ -110,4 +110,24 @@ module RoutingEngineTests =
                 ]
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context"
+
+            testCase "Inspect multiple routes picks based on action - action2" <| fun _ ->
+                let ctx = withEvent "action2"
+                let route = choose [
+                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 1: {x}" ctx; Core.flow next ctx)
+                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 2: {x}" ctx; Core.flow next ctx)
+                ]
+                let output = runTest route next ctx
+                Expect.isSome output "Should still get a context"
+
+            testCase "bind event binds empty payload event" <| fun _ ->
+                let ctx = withEvent Events.EventNames.SystemDidWakeUp
+                let route = tryBindEvent errorHandler (fun x next ctx -> addLog "successfully bound event" ctx; flow next ctx)
+                let output = runTest route next ctx
+                match output with
+                | Some ctx ->
+                    let expected = [ "successfully bound event" ]
+                    let actual = printContextLogEvents ctx
+                    Expect.equal actual expected "Should have visited all nodes with logging."
+                | None -> failwith "Did not find context when it should have"
         ]

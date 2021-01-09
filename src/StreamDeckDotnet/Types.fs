@@ -153,13 +153,13 @@ module Events =
 
   module EventNames =
     [<Literal>]
-    let DidReceiveSettings = "didReceiveSettings"
+    let DidReceiveSettings = "didreceivesettings"
     [<Literal>]
-    let KeyDown = "keyDown"
+    let KeyDown = "keydown"
     [<Literal>]
-    let KeyUp = "keyUp"
+    let KeyUp = "keyup"
     [<Literal>]
-    let SystemDidWakeUp = "systemDidWakeUp"
+    let SystemDidWakeUp = "systemdidwakeup"
 
   let createLogEvent (msg : string) =
     let payload = { Types.Sent.LogMessagePayload.Message = JValue(msg) }
