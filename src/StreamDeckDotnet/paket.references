@@ -11,5 +11,6 @@ System.Text.Json
 Thoth.Json.Net
 Newtonsoft.Json
 FsToolkit.ErrorHandling
+Serilog
 
 File:FsLibLog.fs

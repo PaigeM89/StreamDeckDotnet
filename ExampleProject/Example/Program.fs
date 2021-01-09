@@ -1,19 +1,21 @@
-// Learn more about F# at http://docs.microsoft.com/dotnet/fsharp
-
 open System
 open StreamDeckDotnet.Websockets
 open StreamDeckDotnet.Engine
 open StreamDeckDotnet.Logging
 open Serilog
-// open Serilog.Sinks.File
-// open Serilog.Sinks.Console
+open Example
 
 let log = 
   LoggerConfiguration()
     .MinimumLevel.Verbose()
-    .WriteTo.File("log.txt")
-    .WriteTo.Console()
     .Enrich.FromLogContext()
+    .Enrich.With(new ThreadIdEnricher())
+    .WriteTo.File("log.txt",
+      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
+    )
+    .WriteTo.Console(
+      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
+    )
     .CreateLogger()
 
 LogProvider.setLoggerProvider (Providers.SerilogProvider.create ())
@@ -35,8 +37,14 @@ let main argv =
   Log.setMessage("Creating client") |> logger.trace
   let client = StreamDeckClient(args, routes)
   Log.setMessage("Running client") |> logger.trace
-  client.Run()
+  try
+    client.Run()
+  with
+  | e ->
+    Log.setMessage "Error running web socket: {msg}"
+    >> Log.addContext "msg" e.Message
+    >> Log.addExn e
+    |> logger.error
 
   printfn "Exiting client.run, exiting program"
-  //log.CloseAndFlush()
   0 // return an integer exit code

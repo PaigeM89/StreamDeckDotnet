@@ -70,6 +70,7 @@ module Websockets =
           payload
         )
 
+      //splitting this into a separate function allows for better error logging
       let closeSocket token = 
         try
           if isNull _websocket then !! "how did we get here" |> logger.error
@@ -91,14 +92,13 @@ module Websockets =
               do! lockAsync()
               !! "Closing socket" |> logger.info
               let token = _cancelSource.Token
-              //do! _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnecting", token) |> Async.AwaitTask
               do! closeSocket token |> Async.AwaitTask
               !! "Disposing socket" |> logger.debug
               _websocket.Dispose()
               !! "Initializing new websocket" |> logger.trace
               _websocket <- new ClientWebSocket()
             else
-              !! "Websocket is attempting to disconnect, but is null"
+              !! "Websocket is attempting to disconnect, but is closed already."
               |> logger.warn
           finally
             do release |> ignore
@@ -175,7 +175,15 @@ module Websockets =
         Async.tryFinally fin work
 
       member this.Run() =
+//        try
         this.RunAsync() |> Async.RunSynchronously
+        // with
+        // | e ->
+        //   !! "Error running web socket: {msg}"
+        //   >>!+ ("msg", e.Message)
+        //   >>!! e
+        //   |> logger.error
+        //   raise e
 
       member this.Stop() =
         _cancelSource.Cancel()

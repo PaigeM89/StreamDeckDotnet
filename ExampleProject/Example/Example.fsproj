@@ -9,6 +9,7 @@
       <Paket>True</Paket>
       <Link>paket-files/FsLibLog.fs</Link>
     </Compile>
+    <Compile Include="LogEnricher.fs" />
     <Compile Include="Routing.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
