@@ -4,6 +4,7 @@ module Context =
   open Types
   open FsToolkit.ErrorHandling
   open Thoth.Json.Net
+  open System.Collections.Concurrent
 
   type PipelineFailure =
   | DecodeFailure of input : string * errorMsg : string
@@ -42,6 +43,7 @@ module Context =
   type EventContext(eventMetadata : EventMetadata) =
     let mutable _eventReceived : Events.EventReceived option = None
     let mutable _eventsToSend : Events.EventSent list option = None
+    let _sendEventQueue : ConcurrentQueue<Events.EventSent > = new ConcurrentQueue<Events.EventSent>()
     let mutable _eventType : System.Type option = None
     let mutable _eventTypeValidation: (Events.EventReceived -> bool )option = None
 
@@ -70,6 +72,7 @@ module Context =
     member this.SetEventType(t : System.Type) = _eventType <- Some t
 
     member this.AddSendEvent e =
+      _sendEventQueue.Enqueue(e)
       match _eventsToSend with
       | None ->
         _eventsToSend <- Some [e]
@@ -80,6 +83,9 @@ module Context =
       match _eventsToSend with
       | Some x -> x
       | None -> []
+
+    member this.GetEventsToSendFromQueue() =
+      _sendEventQueue.ToArray() |> List.ofArray
 
   let addSendEvent e (ctx : EventContext) = 
     ctx.AddSendEvent e

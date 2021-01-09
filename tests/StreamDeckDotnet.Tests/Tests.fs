@@ -31,7 +31,7 @@ module RoutingEngineTests =
     }
 
     let emptyContext = EventContext( EventMetadataModule.empty()  )
-    let withAction name : EventContext = 
+    let withEvent name : EventContext = 
         let ar = { EventMetadataModule.empty() with Event = name}
         EventContext(ar)
     let next = fun (ctx : EventContext) ->  Some ctx |> Async.lift
@@ -39,17 +39,25 @@ module RoutingEngineTests =
     let runTest route next ctx = 
         evaluateStep route next ctx |> Async.RunSynchronously
 
+    let printContextLogEvents (ctx: EventContext) =
+        ctx.GetEventsToSendFromQueue()
+        |> List.map (fun x -> 
+            match x with
+            | Events.EventSent.LogMessage { Message = payload } -> payload.ToString()
+            //| _ -> ""
+        )
+
     [<Tests>]
     let tests =
         testList "Routing Engine tests" [
             testCase "Single route returns a context" <| fun _ ->
-                let ctx = withAction ""
+                let ctx = withEvent ""
                 let route = eventMatch ""
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
 
             testCase "Empty route returns no events to write" <| fun _ ->
-                let ctx = withAction ""
+                let ctx = withEvent ""
                 let route = eventMatch ""
                 let output = runTest route next ctx
                 match output with
@@ -62,20 +70,20 @@ module RoutingEngineTests =
                 | None -> failwith "Did not find context when it should have"
 
             testCase "Action route filters based on action name - matching" <| fun _ ->
-                let ctx = withAction "action1"
+                let ctx = withEvent "action1"
                 printfn "\nctx in unit test has action %s \n" ctx.EventMetadata.Event
                 let route = eventMatch "action1"
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
             
-            testCase "Action route filters based on action name - no matching" <| fun _ ->
-                let ctx = withAction "action1"
+            testCase "Action route filters based on action name - non matching" <| fun _ ->
+                let ctx = withEvent "action1"
                 let route = eventMatch "action2"
                 let output = runTest route next ctx
-                Expect.isSome output "Should still get a context back"
+                Expect.isNone output "Should not get a context back when route event does not match"
 
             testCase "Single route returns an event to write" <| fun _ ->
-                let ctx = withAction "action"
+                let ctx = withEvent "action"
                 let route = eventMatch "action" >=> Core.log "node1"
                 let output = runTest route next ctx
                 match output with
@@ -83,18 +91,19 @@ module RoutingEngineTests =
                     Expect.equal (Seq.length (ctx.GetEventsToSend())) 1 "Should have created a single event to send"
                 | None -> failwith "Did not find context when it should have"
 
-            ftestCase "Multi step route has all nodes visited" <| fun _ ->
-                let ctx = withAction "action"
+            testCase "Multi step route has all nodes visited" <| fun _ ->
+                let ctx = withEvent "action"
                 let route = eventMatch "action" >=> Core.log "node1"  >=> Core.log "node2"
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
-                    let expected = [ "node1"; "node2" ] |> List.map Events.createLogEvent
-                    Expect.equal (ctx.GetEventsToSend()) expected "Should have visited all nodes with logging."
+                    let expected = [ "node1"; "node2" ]
+                    let actual = printContextLogEvents ctx
+                    Expect.equal actual expected "Should have visited all nodes with logging."
                 | None -> failwith "Did not find context when it should have"
                 
-            testCase "Inspect multiple routes picks based on action" <| fun _ ->
-                let ctx = withAction "action1"
+            testCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
+                let ctx = withEvent "action1"
                 let route = choose [
                     eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 1: {x}" ctx; Core.flow next ctx)
                     eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 2: {x}" ctx; Core.flow next ctx)
