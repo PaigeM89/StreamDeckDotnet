@@ -270,4 +270,4 @@ coverage.*.xml
 .fake
 .ionide
 
-./*/**/log.txt
+./**/log.txt
