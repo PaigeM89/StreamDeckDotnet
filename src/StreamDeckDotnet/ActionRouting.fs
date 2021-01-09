@@ -16,22 +16,22 @@ module ActionRouting =
 
 
   /// Accepts a function that takes the action context and validates if the action route is valid.
-  let appState (stateCheck: ActionContext -> bool) =
+  let appState (stateCheck: EventContext -> bool) =
     fun next ctx ->
       next ctx
 
   let matcher matchFunc =
     let logErrorHandler err =
       Core.log $"Error handling event: {err}"
-    fun next (ctx: ActionContext) ->
+    fun next (ctx: EventContext) ->
       tryBindEvent logErrorHandler (matchFunc ctx) next ctx
 
 
-  let action (eventName : string) : ActionHandler =
-    fun (next : ActionFunc) (ctx : Context.ActionContext) ->
+  let eventMatch (eventName : string) : EventHandler =
+    fun (next : EventFunc) (ctx : Context.EventContext) ->
       printfn "\nevent name used in validation is %s\n" eventName
       let validate = Core.validateAction eventName
-      Core.actionReceived validate next ctx
+      Core.EventMetadata validate next ctx
 
 
   let tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler =
@@ -43,20 +43,20 @@ module ActionRouting =
         | _ -> bindingErrorHandler e next ctx
       tryBindEvent decodingErrorHandler validatePayload next ctx
 
-  let tryBindKeyDownEvent (errorHandler : Context.ActionFailure -> ActionHandler) (successHandler : Types.Received.KeyPayload -> ActionHandler) =
-    fun next (ctx : ActionContext) ->
+  let tryBindKeyDownEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Types.Received.KeyPayload -> EventHandler) =
+    fun next (ctx : EventContext) ->
       let filter (e : Events.EventReceived)  = 
         match e with
         | Events.EventReceived.KeyDown payload -> successHandler payload
-        | _ -> errorHandler (Context.ActionFailure.WrongEvent ((e.GetName()), Events.EventNames.KeyDown))
+        | _ -> errorHandler (Context.PipelineFailure.WrongEvent ((e.GetName()), Events.EventNames.KeyDown))
       tryBindEvent errorHandler filter next ctx
 
-  let tryBindKeyDownEventPipeline (errorHandler : Context.ActionFailure -> ActionHandler) (successHandler : Types.Received.KeyPayload -> ActionHandler) =
-    fun next (ctx : ActionContext) ->
+  let tryBindKeyDownEventPipeline (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Types.Received.KeyPayload -> EventHandler) =
+    fun next (ctx : EventContext) ->
       let filter (e : Events.EventReceived)  = 
         match e with
         | Events.EventReceived.KeyDown payload -> successHandler payload
-        | _ -> errorHandler Context.ActionFailure.Placeholder
+        | _ -> errorHandler Context.PipelineFailure.Placeholder
       tryBindEvent errorHandler filter next ctx
 
 module Engine =
@@ -65,18 +65,18 @@ module Engine =
   open Context
   open Core
 
-  type ActionDelegate = delegate of ActionContext -> Async<unit>
+  type ActionDelegate = delegate of EventContext -> Async<unit>
 
-  type ActionMiddleware(next : ActionDelegate, handler: ActionHandler) =
+  type ActionMiddleware(next : ActionDelegate, handler: EventHandler) =
     let func = handler earlyReturn
 
-    member this.Invoke (ctx : ActionContext) =
+    member this.Invoke (ctx : EventContext) =
       async {
         let! result = func ctx
         if result.IsNone then return! next.Invoke ctx
       }
 
-  type RequestHandler = ActionFunc -> ActionContext -> ActionFuncResult
+  type RequestHandler = EventFunc -> EventContext -> EventFuncResult
 
   // let mapActions (routes : ActionRoute list) =
   //   routes
@@ -86,8 +86,8 @@ module Engine =
   //     | MultiRoutes (routes) -> mapMultiAction routes
   //   )
 
-  let evaluateStep (handler : RequestHandler) next (ctx : ActionContext) : ActionFuncResult =
-    printfn "\nCtx event is %s\n" ctx.ActionReceived.Event
+  let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
+    printfn "\nCtx event is %s\n" ctx.EventMetadata.Event
     async {
       match! next ctx with
       | Some ctx -> return! handler next ctx
@@ -103,13 +103,13 @@ module Engine =
 
 
   // let buildActionRoutes (rootHandler : RequestHandler) (ctx : ActionContext) =
-  //   let func : ActionFunc = rootHandler earlyReturn
+  //   let func : EventFunc = rootHandler earlyReturn
   //   let t = 
   //     async {
   //       let! result = func ctx
   //       if result.IsNone then return! next.Invoke(ctx)
   //     }
-  //   //let buildActionRoute (func: ActionFunc, ctx : ActionContext, funcResult : ActionFuncResult) =
+  //   //let buildActionRoute (func: EventFunc, ctx : ActionContext, funcResult : EventFuncResult) =
       
   //   ()
 
@@ -117,11 +117,11 @@ module Engine =
   //   ()
 
   // handles the raw json message from the web socket
-  let socketMsgHandlerR (msg : string) (routes: Core.ActionHandler) = asyncResult {
-    //first decode into an ActionReceived
-    let! actionReceived = Types.decodeActionReceived msg
+  let socketMsgHandlerR (msg : string) (routes: Core.EventHandler) = asyncResult {
+    //first decode into an EventMetadata
+    let! EventMetadata = Types.decodeEventMetadata msg
     //then build the context
-    let ctx = ActionContext(actionReceived)
+    let ctx = EventContext(EventMetadata)
     
     //now match the context to the known routes
     let t = fun ctx -> AsyncOption.retn ctx
@@ -131,17 +131,17 @@ module Engine =
     | None -> return ctx
   }
 
-  let socketMsgHandler (routes: Core.ActionHandler)  (msg : string) = async {
+  let socketMsgHandler (routes: Core.EventHandler)  (msg : string) = async {
     let! r = socketMsgHandlerR msg routes
     match r with
     | Ok x -> return x
     | Error e -> return failwithf "%A" e
   }
 
-  let handleMatch (matchFunc: ActionContext -> Events.EventReceived -> ActionHandler) = 
+  let handleMatch (matchFunc: EventContext -> Events.EventReceived -> EventHandler) = 
     ActionRouting.matcher matchFunc
 
-  type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.ActionHandler) =
+  type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
     let msgHandler = socketMsgHandler handler
     let _socket = Websockets.StreamDeckConnection(args, msgHandler)
     
@@ -157,23 +157,23 @@ module TestCode =
   open ActionRouting.PayloadRouting
   
 
-  let myAction (event : Events.EventReceived) (next: ActionFunc) (ctx : ActionContext) = async {
+  let myAction (event : Events.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
     Core.addLog $"in My Action handler, with event {event}" ctx
     return! Core.flow next ctx
   }
 
-  let keyUpEvent (event : Types.Received.KeyPayload) (next : ActionFunc) (ctx: ActionContext) = async {
+  let keyUpEvent (event : Types.Received.KeyPayload) (next : EventFunc) (ctx: EventContext) = async {
     Core.addLog $"In key up event handler, with event payload {event}" ctx
     return! Core.flow next ctx
   }
 
-  let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : ActionFunc) (ctx: ActionContext) = async {
+  let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : EventFunc) (ctx: EventContext) = async {
     Core.addLog $"In settings received handler, with event payload {settings}" ctx
     return! Core.flow next ctx
   }
 
-  let errorHandler (err : ActionFailure) : ActionHandler = Core.log ($"in error handler, error: {err}")
-  let bindingErrorHandler (e) : ActionHandler = Core.log($"In binding error handler, got event {e}")
+  let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
+  let bindingErrorHandler (e) : EventHandler = Core.log($"In binding error handler, got event {e}")
 
   let settingsT = (Events.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
 
@@ -186,15 +186,15 @@ module TestCode =
 
   let routes =
     let t2 =
-      action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
+      eventMatch Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
 
     // let t3 =
     //   action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEventPipeline errorHandler >=> Core.log "more logging" >=> keyUpEvent
 
     let keydownroute =
-      action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
+      eventMatch Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
     let wakeUpRoute =
-      action Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
+      eventMatch Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
     
     choose [
       t2
@@ -203,7 +203,7 @@ module TestCode =
     ]
 
   //todo: try this, resolve types.
-  let matchFuction (ctx : ActionContext) event =
+  let matchFuction (ctx : EventContext) event =
     match event with
     | Events.EventReceived.KeyDown payload ->
       () |> Async.lift

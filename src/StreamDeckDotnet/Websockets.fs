@@ -34,7 +34,7 @@ module Websockets =
 
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
-  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<Context.ActionContext>) =
+  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<Context.EventContext>) =
       let mutable _websocket : ClientWebSocket = new ClientWebSocket()
       let _cancelSource = new CancellationTokenSource()
       let _semaphore = new SemaphoreSlim(1)
@@ -50,10 +50,10 @@ module Websockets =
           ()
       }
 
-      let eventsEncoded (ctx : Context.ActionContext) =
+      let eventsEncoded (ctx : Context.EventContext) =
         ctx.GetEventsToSend()
         |> List.map (fun payloads -> 
-          payloads.Encode ctx.ActionReceived.Context ctx.ActionReceived.Device
+          payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
         )
 
       member this.DisconnectAsync() = async {

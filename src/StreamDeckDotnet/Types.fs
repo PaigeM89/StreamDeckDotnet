@@ -13,11 +13,11 @@ module Types =
       return targetType payload
     }
 
-  type ActionReceived = {
+  type EventMetadata = {
     /// The URI of the Action. Eg, "com.elgato.example.action"
     Action : string option
     
-    /// A string describing the action, eg "didReceiveSettings"
+    /// A string describing the event, eg "didReceiveSettings"
     Event : string
 
     /// A unique, opaque, non-controlled ID for the instance's action.
@@ -31,7 +31,7 @@ module Types =
     /// The raw JSON describing the payload for this event.
     Payload : string option
   } with
-      static member Decoder : Decoder<ActionReceived> = 
+      static member Decoder : Decoder<EventMetadata> = 
         Decode.object (fun get -> {
           Action = get.Optional.Field "action" Decode.string
           Event = get.Required.Field "event" Decode.string
@@ -40,8 +40,8 @@ module Types =
           Payload = get.Optional.Field "payload" Decode.string
         })
   
-  let decodeActionReceived (str : string) =
-    Decode.fromString ActionReceived.Decoder str
+  let decodeEventMetadata (str : string) =
+    Decode.fromString EventMetadata.Decoder str
 
   module Received = 
 

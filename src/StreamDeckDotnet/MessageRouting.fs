@@ -2,6 +2,8 @@ namespace StreamDeckDotnet.Routing
 
 open StreamDeckDotnet
 
+// this probably won't be used?? we'll see.
+
 [<AutoOpenAttribute>]
 module MessageRoutingBuilder =
   open Microsoft.Extensions.Logging
@@ -17,7 +19,7 @@ module MessageRoutingBuilder =
   | NotSpecified
 
   type ActionRoute = 
-  | SimpleRoute of Receive * actionName : string * ActionHandler
+  | SimpleRoute of Receive * actionName : string * EventHandler
   //| NestedRoutes (see giraffe??)
   | MultiRoutes of ActionRoute list
 
@@ -41,13 +43,13 @@ module MessageRoutingBuilder =
   let KEY_DOWN = applyReceiveToActionRoutes Receive.KeyDown
   let KEY_UP = applyReceiveToActionRoute Receive.KeyUp
 
-  let action (eventName : string) (handler : ActionHandler) =
+  let action (eventName : string) (handler : EventHandler) =
     SimpleRoute (Receive.NotSpecified, eventName, handler)
 
-  let action2 (actionDiscriminator : ActionHandler) (handler : ActionHandler) = 
+  let action2 (actionDiscriminator : EventHandler) (handler : EventHandler) = 
     SimpleRoute(Receive.NotSpecified, "", handler)
 
-  let mapSingleAction(actionEndpoint : Receive * string * ActionHandler) =
+  let mapSingleAction(actionEndpoint : Receive * string * EventHandler) =
     ()
 
   let mapMultiAction(multiAction: ActionRoute list) = ()

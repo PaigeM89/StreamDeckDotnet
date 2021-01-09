@@ -14,7 +14,7 @@ module RoutingEngineTests =
     open StreamDeckDotnet.Types
     open StreamDeckDotnet.ActionRouting
     
-    module ActionReceived =
+    module EventMetadataModule =
         let empty() = {
             Action = None
             Event = ""
@@ -22,38 +22,19 @@ module RoutingEngineTests =
             Device = None
             Payload = None
         }
+        let thing() = ()
 
-    // module TestRoutes =
-
-    //     let myAction (event : Events.EventReceived) (next: ActionFunc) (ctx : ActionContext) = async {
-    //         Core.addLog $"in My Action handler, with event {event}" ctx
-    //         return! Core.flow next ctx
-    //     }
-
-    //     let errorHandler (err : ActionFailure) : ActionHandler = Core.log ($"in error handler, error: {err}")
-
-    //     let basicRoute = action "" >=> tryBindEvent errorHandler myAction
-
-    //     let multiStepRoute = action "action" >=> Core.log "node1"  >=> Core.log "node2"
-
-    //     let multipleRoutes = choose [
-    //         action "action1" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 1: {x}" ctx; Core.flow next ctx)
-    //         action "action2" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 2: {x}" ctx; Core.flow next ctx)
-    //     ]
-
-    //     let emptyRoute = action "" >=> tryBindEvent errorHandler (fun x next ctx -> Core.flow next ctx)
-    
-    let errorHandler (err : ActionFailure) : ActionHandler = Core.log ($"in error handler, error: {err}")
-    let myAction (event : Events.EventReceived) (next: ActionFunc) (ctx : ActionContext) = async {
+    let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
+    let myAction (event : Events.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
         Core.addLog $"in My Action handler, with event {event}" ctx
         return! Core.flow next ctx
     }
 
-    let emptyContext = ActionContext(ActionReceived.empty())
-    let withAction name : ActionContext = 
-        let ar = { ActionReceived.empty() with Event = name}
-        ActionContext(ar)
-    let next = fun (ctx : ActionContext) ->  Some ctx |> Async.lift
+    let emptyContext = EventContext( EventMetadataModule.empty()  )
+    let withAction name : EventContext = 
+        let ar = { EventMetadataModule.empty() with Event = name}
+        EventContext(ar)
+    let next = fun (ctx : EventContext) ->  Some ctx |> Async.lift
 
     let runTest route next ctx = 
         evaluateStep route next ctx |> Async.RunSynchronously
@@ -63,13 +44,13 @@ module RoutingEngineTests =
         testList "Routing Engine tests" [
             testCase "Single route returns a context" <| fun _ ->
                 let ctx = withAction ""
-                let route = action ""
+                let route = eventMatch ""
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
 
             testCase "Empty route returns no events to write" <| fun _ ->
                 let ctx = withAction ""
-                let route = action ""
+                let route = eventMatch ""
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
@@ -82,20 +63,20 @@ module RoutingEngineTests =
 
             testCase "Action route filters based on action name - matching" <| fun _ ->
                 let ctx = withAction "action1"
-                printfn "\nctx in unit test has action %s \n" ctx.ActionReceived.Event
-                let route = action "action1"
+                printfn "\nctx in unit test has action %s \n" ctx.EventMetadata.Event
+                let route = eventMatch "action1"
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
             
             testCase "Action route filters based on action name - no matching" <| fun _ ->
                 let ctx = withAction "action1"
-                let route = action "action2"
+                let route = eventMatch "action2"
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
 
             testCase "Single route returns an event to write" <| fun _ ->
                 let ctx = withAction "action"
-                let route = action "action" >=> Core.log "node1"
+                let route = eventMatch "action" >=> Core.log "node1"
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
@@ -104,7 +85,7 @@ module RoutingEngineTests =
 
             ftestCase "Multi step route has all nodes visited" <| fun _ ->
                 let ctx = withAction "action"
-                let route = action "action" >=> Core.log "node1"  >=> Core.log "node2"
+                let route = eventMatch "action" >=> Core.log "node1"  >=> Core.log "node2"
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
@@ -115,8 +96,8 @@ module RoutingEngineTests =
             testCase "Inspect multiple routes picks based on action" <| fun _ ->
                 let ctx = withAction "action1"
                 let route = choose [
-                    action "action1" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 1: {x}" ctx; Core.flow next ctx)
-                    action "action2" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 2: {x}" ctx; Core.flow next ctx)
+                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 1: {x}" ctx; Core.flow next ctx)
+                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> addLog $"action 2: {x}" ctx; Core.flow next ctx)
                 ]
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context"

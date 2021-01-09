@@ -9,24 +9,24 @@ module Core =
   open FsToolkit.ErrorHandling
 
   // all actions can possibly result in an event being sent.
-  type ActionFuncResult = Async<Context.ActionContext option>
+  type EventFuncResult = Async<Context.EventContext option>
 
-  type ActionFunc = Context.ActionContext -> ActionFuncResult
+  type EventFunc = Context.EventContext -> EventFuncResult
 
-  type ActionHandler = ActionFunc -> ActionFunc
+  type EventHandler = EventFunc -> EventFunc
 
-  type ErrorHandler = exn -> ILogger -> ActionHandler
+  type ErrorHandler = exn -> ILogger -> EventHandler
 
-  let skipPipeline : ActionFuncResult = Async.lift None
-  let earlyReturn : ActionFunc = Some >> Async.lift
+  let skipPipeline : EventFuncResult = Async.lift None
+  let earlyReturn : EventFunc = Some >> Async.lift
 
-  let compose (action1 : ActionHandler) (action2 : ActionHandler) : ActionHandler =
+  let compose (action1 : EventHandler) (action2 : EventHandler) : EventHandler =
     fun final -> final |> action2 |> action1
 
   let (>=>) = compose
 
-  let rec private chooseActionFunc (funcs : ActionFunc list) : ActionFunc =
-    fun (ctx : Context.ActionContext) ->
+  let rec private chooseEventFunc (funcs : EventFunc list) : EventFunc =
+    fun (ctx : Context.EventContext) ->
       async {
         match funcs with
         | [] -> return None
@@ -34,13 +34,13 @@ module Core =
           let! result = func ctx
           match result with
           | Some c -> return Some c
-          | None -> return! chooseActionFunc tail ctx
+          | None -> return! chooseEventFunc tail ctx
       }
 
-  let choose (handlers : ActionHandler list) : ActionHandler = 
-    fun (next : ActionFunc) ->
+  let choose (handlers : EventHandler list) : EventHandler = 
+    fun (next : EventFunc) ->
       let funcs = handlers |> List.map (fun h -> h next)
-      fun (ctx : Context.ActionContext) -> chooseActionFunc funcs ctx
+      fun (ctx : Context.EventContext) -> chooseEventFunc funcs ctx
 
   let tryDecode decoder targetType payload =
     result {
@@ -48,17 +48,17 @@ module Core =
       return targetType payload
     }
 
-  let tryBindEvent (errorHandler : ActionFailure -> ActionHandler) (successHandler : EventReceived -> ActionHandler) : ActionHandler =
-    fun (next : ActionFunc) (ctx: ActionContext) -> async {
+  let tryBindEvent (errorHandler : PipelineFailure -> EventHandler) (successHandler : EventReceived -> EventHandler) : EventHandler =
+    fun (next : EventFunc) (ctx: EventContext) -> async {
       let! result = ctx.TryBindEventAsync
       match result with
       | Ok event -> return! successHandler event next ctx
       | Error err -> return! errorHandler err next ctx
     }
 
-  let actionReceived (validate: string -> bool) : ActionHandler =
-    fun (next : ActionFunc) (ctx : ActionContext) ->
-      let x = ctx.ActionReceived.Event
+  let EventMetadata (validate: string -> bool) : EventHandler =
+    fun (next : EventFunc) (ctx : EventContext) ->
+      let x = ctx.EventMetadata.Event
       printfn "\nAction received event is %s\n" x
       if validate x
       then next ctx
@@ -69,17 +69,17 @@ module Core =
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
   //these structures are in Giraffe but i don't know what they do
-  let KEY_DOWN : ActionHandler = actionReceived (validateAction EventNames.KeyDown)
-  let SYSTEM_WAKE_UP : ActionHandler = actionReceived (validateAction EventNames.SystemDidWakeUp)
-  let KEY_UP : ActionHandler = actionReceived (validateAction EventNames.KeyDown)
+  let KEY_DOWN : EventHandler = EventMetadata (validateAction EventNames.KeyDown)
+  let SYSTEM_WAKE_UP : EventHandler = EventMetadata (validateAction EventNames.SystemDidWakeUp)
+  let KEY_UP : EventHandler = EventMetadata (validateAction EventNames.KeyDown)
 
-  let addLog (msg : string) (ctx : ActionContext) =
+  let addLog (msg : string) (ctx : EventContext) =
     let log = Events.createLogEvent msg
     Context.addSendEvent log ctx
 
-  let log (msg : string) : ActionHandler =
-    fun (next : ActionFunc) (ctx : ActionContext) ->
+  let log (msg : string) : EventHandler =
+    fun (next : EventFunc) (ctx : EventContext) ->
       addLog msg ctx
       next ctx
 
-  let flow (_ : ActionFunc) (ctx: ActionContext) = Context.flow ctx
+  let flow (_ : EventFunc) (ctx: EventContext) = Context.flow ctx

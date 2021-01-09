@@ -5,7 +5,7 @@ module Context =
   open FsToolkit.ErrorHandling
   open Thoth.Json.Net
 
-  type ActionFailure =
+  type PipelineFailure =
   | DecodeFailure of input : string * errorMsg : string
   | UnknownEventType of eventName : string
   /// Returned when attempting to decode a payload for a type that does not have one, such as SystemWakeUp
@@ -19,7 +19,7 @@ module Context =
     | Ok x -> Ok x
     | Error msg -> DecodeFailure(input, msg) |> Error
 
-  let tryDecode<'a> input decodeFunc : Result<'a, ActionFailure> = result {
+  let tryDecode<'a> input decodeFunc : Result<'a, PipelineFailure> = result {
     match decodeFunc input with
     | Ok x -> return x
     | Error msg -> return! DecodeFailure(input, msg) |> Error
@@ -39,18 +39,18 @@ module Context =
       | None -> PayloadMissing |> Error
     | NoPayloadRequired e -> Ok e
 
-  type ActionContext(actionReceived : ActionReceived) =
+  type EventContext(eventMetadata : EventMetadata) =
     let mutable _eventReceived : Events.EventReceived option = None
     let mutable _eventsToSend : Events.EventSent list option = None
     let mutable _eventType : System.Type option = None
     let mutable _eventTypeValidation: (Events.EventReceived -> bool )option = None
 
-    member this.ActionReceived = actionReceived
+    member this.EventMetadata = eventMetadata
     member this.EventReceived = _eventReceived
 
     member this.TryBindEventAsync = asyncResult {
       let decoder =
-        let event = actionReceived.Event.ToLowerInvariant()
+        let event = eventMetadata.Event.ToLowerInvariant()
         match event with
         | Events.EventNames.KeyDown ->
           let func = Types.tryDecodePayload Types.Received.KeyPayload.Decoder Events.EventReceived.KeyDown
@@ -59,7 +59,7 @@ module Context =
           fun _ -> decode (NoPayloadRequired Events.SystemWakeUp)
         | _ ->
           fun _ -> UnknownEventType event |> Error
-      return! decoder actionReceived.Payload
+      return! decoder eventMetadata.Payload
     }
 
     member this.ValidateEventType e = 
@@ -81,11 +81,11 @@ module Context =
       | Some x -> x
       | None -> []
 
-  let addSendEvent e (ctx : ActionContext) = 
+  let addSendEvent e (ctx : EventContext) = 
     ctx.AddSendEvent e
 
-  let setEventType t (ctx : ActionContext) =
+  let setEventType t (ctx : EventContext) =
     ctx.SetEventType t
 
-  let flow (ctx : ActionContext) = Some ctx |> Async.lift
+  let flow (ctx : EventContext) = Some ctx |> Async.lift
 
