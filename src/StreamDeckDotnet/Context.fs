@@ -2,6 +2,7 @@ namespace StreamDeckDotnet
 
 module Context =
   open Types
+  open Events
   open FsToolkit.ErrorHandling
   open Thoth.Json.Net
   open System.Collections.Concurrent
@@ -54,10 +55,10 @@ module Context =
       let decoder =
         let event = eventMetadata.Event.ToLowerInvariant()
         match event with
-        | Events.EventNames.KeyDown ->
+        | InvariatnEqual Events.EventNames.KeyDown ->
           let func = Types.tryDecodePayload Types.Received.KeyPayload.Decoder Events.EventReceived.KeyDown
           fun p -> decode (PayloadRequired (func, p))
-        | Events.EventNames.SystemDidWakeUp ->
+        | InvariatnEqual Events.EventNames.SystemDidWakeUp ->
           fun _ -> decode (NoPayloadRequired Events.SystemWakeUp)
         | _ ->
           fun _ -> UnknownEventType event |> Error

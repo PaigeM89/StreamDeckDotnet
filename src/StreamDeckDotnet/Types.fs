@@ -1,5 +1,7 @@
 namespace StreamDeckDotnet
 
+open System
+
 module Types =
   //open System.Text.Json
   open Newtonsoft.Json
@@ -150,6 +152,9 @@ module Events =
       match this with
       | LogMessage payload ->
         Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
+
+  let (|InvariatnEqual|_|) (str: string) arg =
+    if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some() else None
 
   module EventNames =
     [<Literal>]

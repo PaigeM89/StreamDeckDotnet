@@ -1,18 +1,20 @@
 namespace ExampleProject
 
+open StreamDeckDotnet
 open StreamDeckDotnet.Core
+open StreamDeckDotnet.Context
+open StreamDeckDotnet.Events
+open StreamDeckDotnet.ActionRouting
 
 module Routing =
 
-  let myAction (event : Events.EventReceived) (next: EventFunc) (ctx : ActionContext) = async {
-    let! thing = Core.addLog $"in My Action handler, with event {event}" ctx
-    match thing with
-    | Some ctx -> return! Core.flow next ctx
-    | None -> return! Core.flow next ctx
+  let myAction (event : Events.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
+    Core.addLog $"in My Action handler, with event {event}" ctx
+    return! Core.flow next ctx
   }
 
-  let errorHandler (msg : string) : EventHandler = Core.log ($"in error handler, error: {msg}")
+  let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
 
-  let routes = choose [
-    KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindEventPayload errorHandler myAction
+  let routes : EventRoute = choose [
+    KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
   ]

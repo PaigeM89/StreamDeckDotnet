@@ -5,6 +5,8 @@ module ActionRouting =
   open Core
   open Context
 
+  type EventRoute = EventFunc -> EventContext -> EventFuncResult
+
   /// Routing that is only available once we have determined the payload type
   module PayloadRouting = 
     let multiAction() = true
@@ -119,9 +121,9 @@ module Engine =
   // handles the raw json message from the web socket
   let socketMsgHandlerR (msg : string) (routes: Core.EventHandler) = asyncResult {
     //first decode into an EventMetadata
-    let! EventMetadata = Types.decodeEventMetadata msg
+    let! eventMetadata = Types.decodeEventMetadata msg
     //then build the context
-    let ctx = EventContext(EventMetadata)
+    let ctx = EventContext(eventMetadata)
     
     //now match the context to the known routes
     let t = fun ctx -> AsyncOption.retn ctx
