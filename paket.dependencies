@@ -25,6 +25,10 @@ nuget Thoth.Json
 nuget Thoth.Json.Net
 nuget Newtonsoft.Json
 nuget FsToolkit.ErrorHandling
+nuget Serilog
+nuget Serilog.Settings.Configuration
+nuget Serilog.Sinks.Console
+nuget Serilog.Sinks.File
 
 // [ FAKE GROUP ]
 group Build
