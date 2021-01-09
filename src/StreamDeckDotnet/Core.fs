@@ -58,11 +58,14 @@ module Core =
 
   let actionReceived (validate: string -> bool) : ActionHandler =
     fun (next : ActionFunc) (ctx : ActionContext) ->
-      if validate ctx.ActionReceived.Event
+      let x = ctx.ActionReceived.Event
+      printfn "\nAction received event is %s\n" x
+      if validate x
       then next ctx
       else skipPipeline
 
-  let validateAction (s : string) (t : string) = 
+  let validateAction (s : string) (t : string) =
+    printfn "\ncomparing %s to %s\n" s t
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
   //these structures are in Giraffe but i don't know what they do

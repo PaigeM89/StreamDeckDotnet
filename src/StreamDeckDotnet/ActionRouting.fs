@@ -26,8 +26,10 @@ module ActionRouting =
     fun next (ctx: ActionContext) ->
       tryBindEvent logErrorHandler (matchFunc ctx) next ctx
 
+
   let action (eventName : string) : ActionHandler =
     fun (next : ActionFunc) (ctx : Context.ActionContext) ->
+      printfn "\nevent name used in validation is %s\n" eventName
       let validate = Core.validateAction eventName
       Core.actionReceived validate next ctx
 
@@ -84,10 +86,18 @@ module Engine =
   //     | MultiRoutes (routes) -> mapMultiAction routes
   //   )
 
-  let inspectRoute (handler : RequestHandler) next (ctx : ActionContext) =
-    let thing = next ctx |> Async.RunSynchronously
-    match thing with
-    | Some ctx -> 
+  let evaluateStep (handler : RequestHandler) next (ctx : ActionContext) : ActionFuncResult =
+    printfn "\nCtx event is %s\n" ctx.ActionReceived.Event
+    async {
+      match! next ctx with
+      | Some ctx -> return! handler next ctx
+      | None -> return! skipPipeline
+    }
+  
+  let inspectroute handler next ctx = 
+    let eval = next ctx |> Async.RunSynchronously
+    match eval with
+    | Some ctx ->
       handler next ctx
     | None -> skipPipeline
 
