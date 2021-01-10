@@ -29,6 +29,7 @@ nuget Serilog
 nuget Serilog.Settings.Configuration
 nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File
+nuget Argu
 
 // [ FAKE GROUP ]
 group Build

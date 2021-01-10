@@ -270,4 +270,4 @@ coverage.*.xml
 .fake
 .ionide
 
-./**/log.txt
+ExampleProject/Example/log.txt

@@ -1,9 +1,8 @@
 # StreamDeckDotnet
 
-
 **Notes To Self**
 
-Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugsin/`
+Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugins/`
 
 Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
 

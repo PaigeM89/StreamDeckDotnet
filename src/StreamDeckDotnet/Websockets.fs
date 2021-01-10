@@ -174,16 +174,7 @@ module Websockets =
           }
         Async.tryFinally fin work
 
-      member this.Run() =
-//        try
-        this.RunAsync() |> Async.RunSynchronously
-        // with
-        // | e ->
-        //   !! "Error running web socket: {msg}"
-        //   >>!+ ("msg", e.Message)
-        //   >>!! e
-        //   |> logger.error
-        //   raise e
+      member this.Run() = this.RunAsync() |> Async.RunSynchronously
 
       member this.Stop() =
         _cancelSource.Cancel()

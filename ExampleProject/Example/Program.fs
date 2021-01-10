@@ -4,6 +4,7 @@ open StreamDeckDotnet.Engine
 open StreamDeckDotnet.Logging
 open Serilog
 open Example
+open Example.ArgsParsing
 
 let log = 
   LoggerConfiguration()
@@ -27,12 +28,14 @@ let logger = LogProvider.getLoggerByName("Example.Program")
 let main argv =
   Log.setMessage("Starting example project") |> logger.trace
   let routes = ExampleProject.Routing.routes
-  let args = {
-    StreamDeckSocketArgs.Port = 0
-    Id = System.Guid.Empty
-    RegisterEvent = ""
-    Info = ""
-  }
+  // let args = {
+  //   StreamDeckSocketArgs.Port = 28196
+  //   Id = System.Guid.NewGuid()
+  //   RegisterEvent = "registerPlugin"
+  //   Info = ""
+  //}
+
+  let args = ArgsParsing.parseArgs argv
 
   Log.setMessage("Creating client") |> logger.trace
   let client = StreamDeckClient(args, routes)

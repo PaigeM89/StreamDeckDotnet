@@ -11,6 +11,7 @@
     </Compile>
     <Compile Include="LogEnricher.fs" />
     <Compile Include="Routing.fs" />
+    <Compile Include="ArgsParsing.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
