@@ -59,13 +59,11 @@ module Core =
   let EventMetadata (validate: string -> bool) : EventHandler =
     fun (next : EventFunc) (ctx : EventContext) ->
       let x = ctx.EventMetadata.Event
-      printfn "\nAction received event is %s\n" x
       if validate x
       then next ctx
       else skipPipeline
 
   let validateAction (s : string) (t : string) =
-    printfn "\ncomparing %s to %s\n" s t
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
   //these structures are in Giraffe but i don't know what they do

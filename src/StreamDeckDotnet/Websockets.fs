@@ -15,7 +15,7 @@ module Websockets =
 
   type StreamDeckSocketArgs = {
     Port : int
-    Id : Guid
+    PluginUUID : Guid
     RegisterEvent : string
     Info : string
   }
@@ -141,7 +141,6 @@ module Websockets =
             if websocketResult.MessageType = WebSocketMessageType.Text then
               !! "Received text message from web socket" |> logger.trace
               textBuf.Append(Encoding.UTF8.GetString(buf, 0, websocketResult.Count)) |> ignore
-              printfn "Web socket recieved: %s" (string textBuf)
 
               if websocketResult.EndOfMessage then
                 let msg = string textBuf

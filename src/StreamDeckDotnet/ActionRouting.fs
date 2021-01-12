@@ -31,7 +31,6 @@ module ActionRouting =
 
   let eventMatch (eventName : string) : EventHandler =
     fun (next : EventFunc) (ctx : Context.EventContext) ->
-      printfn "\nevent name used in validation is %s\n" eventName
       let validate = Core.validateAction eventName
       Core.EventMetadata validate next ctx
 
@@ -89,7 +88,6 @@ module Engine =
   //   )
 
   let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
-    printfn "\nCtx event is %s\n" ctx.EventMetadata.Event
     async {
       match! next ctx with
       | Some ctx -> return! handler next ctx
@@ -220,7 +218,7 @@ module TestCode =
   let run() =
     let args = {
       StreamDeckSocketArgs.Port = 0
-      Id = System.Guid.Empty
+      PluginUUID = System.Guid.Empty
       RegisterEvent = ""
       Info = ""
     }

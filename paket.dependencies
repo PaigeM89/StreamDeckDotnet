@@ -31,6 +31,17 @@ nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File
 nuget Argu
 
+group Tools
+    storage: none
+    source https://www.nuget.org/api/v2
+    source https://api.nuget.org/v3/index.json
+
+    nuget Spectre.Console
+    nuget Fake.IO.FileSystem ~> 5.20
+    nuget Fake.Core.Target ~> 5.20
+    nuget Fake.DotNet.Cli ~> 5.20
+    nuget FAKE.Core.Process ~> 5.20
+
 // [ FAKE GROUP ]
 group Build
     storage: none

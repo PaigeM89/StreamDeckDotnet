@@ -1,0 +1,8 @@
+FSharp.Core
+Argu
+
+group Tools
+  Spectre.Console
+  Fake.IO.FileSystem
+  Fake.Core.Target
+  Fake.DotNet.Cli

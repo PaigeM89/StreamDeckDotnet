@@ -71,7 +71,6 @@ module RoutingEngineTests =
 
             testCase "Action route filters based on action name - matching" <| fun _ ->
                 let ctx = withEvent "action1"
-                printfn "\nctx in unit test has action %s \n" ctx.EventMetadata.Event
                 let route = eventMatch "action1"
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"

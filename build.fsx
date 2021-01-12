@@ -538,6 +538,40 @@ let watchTests _ =
     let cancelEvent = Console.CancelKeyPress |> Async.AwaitEvent |> Async.RunSynchronously
     cancelEvent.Cancel <- true
 
+let runExpecto _ =
+    !! testsGlob
+    |> Seq.map(fun proj -> fun () ->
+        dotnet.run 
+            (fun opt -> opt |> DotNet.Options.withWorkingDirectory (IO.Path.GetDirectoryName proj))
+            "--summary"
+    )
+    |> Seq.iter(fun x -> 
+        let pr = x()
+        printfn "%A" pr
+    )
+
+
+// Alternative: Read from global json
+let install = lazy DotNet.install DotNet.Versions.FromGlobalJson
+
+let runMimic _ =
+    let mimicDll = "./tools/StreamDeck.Mimic/bin/Debug/net5.0/StreamDeck.Mimic.dll"
+    let exampleDll = "./ExampleProject/Example/bin/Debug/net5.0/Example.dll"
+    let argsList = [
+        "--pathtodll", exampleDll
+        "--port", (string 6969)
+        "--pluginUUID", (Guid.NewGuid()).ToString("N")
+        "--registerEvent", "\"registerPlugin\""
+        "--info", "\"\""
+    ]
+    let args = argsList |> List.map(fun (x, y) -> sprintf "%s %s" x y) |> String.concat " "
+    let pr = 
+        DotNet.exec 
+            (DotNet.Options.lift install.Value >>  DotNet.Options.withWorkingDirectory "./")
+            mimicDll 
+            args
+    printfn "Process Result is %A" pr
+
 let generateAssemblyInfo _ =
 
     let (|Fsproj|Csproj|Vbproj|) (projFileName:string) =
@@ -702,9 +736,11 @@ Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this 
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
 Target.create "BuildExample" buildExample
+Target.create "RunMimic" runMimic
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
 Target.create "GenerateCoverageReport" generateCoverageReport
+Target.create "RunExpecto" runExpecto
 Target.create "WatchTests" watchTests
 Target.create "GenerateAssemblyInfo" generateAssemblyInfo
 Target.create "DotnetPack" dotnetPack

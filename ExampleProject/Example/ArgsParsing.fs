@@ -8,14 +8,14 @@ module ArgsParsing =
 
   type Arguments =
   | [<Mandatory>] Port of int
-  | [<Mandatory>] Id of Guid
-  | [<Mandatory>] RegisterEvent of string
+  | [<Mandatory>][<AltCommandLine("--pluginUUID")>] PluginUUID of Guid
+  | [<Mandatory>][<AltCommandLine("--registerEvent")>] RegisterEvent of string
   | Info of string
     interface IArgParserTemplate with
       member s.Usage =
         match s with
         | Port _ -> "Specify a port to connect to."
-        | Id _ -> "Specify an Id for the plugin."
+        | PluginUUID _ -> "Specify a UUID/GUID for the plugin."
         | RegisterEvent _ -> "The event name to register with."
         | Info _ -> "JSON-formatted addtional information."
 
@@ -32,7 +32,7 @@ module ArgsParsing =
 
     {
       StreamDeckSocketArgs.Port = port
-      Id = results.GetResult Id
+      PluginUUID = results.GetResult PluginUUID
       RegisterEvent = results.GetResult RegisterEvent
       Info = results.GetResult Info
     }
