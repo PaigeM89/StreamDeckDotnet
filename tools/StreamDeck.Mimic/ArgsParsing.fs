@@ -15,7 +15,6 @@ module ArgsParsing =
   
   type Arguments =
   | [<Mandatory>] [<AltCommandLine("--pathToDll")>] PathToDll of string
-  ///[<AltCommandLine("--port")>] 
   | Port of int
   | [<AltCommandLine("--pluginUUID")>] PluginUUID of Guid
   | [<AltCommandLine("--registerEvent")>] RegisterEvent of string

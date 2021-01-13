@@ -14,13 +14,10 @@ nuget Microsoft.NETFramework.ReferenceAssemblies copy_local: true
 nuget Microsoft.Extensions.Logging
 nuget Microsoft.Extensions.Logging.Console
 nuget Microsoft.Extensions.Logging.Debug
-nuget Expecto
-nuget YoloDev.Expecto.TestSdk
-nuget Microsoft.NET.Test.Sdk
-nuget altcover ~> 6
-nuget TaskBuilder.fs
+
+
+//nuget TaskBuilder.fs
 nuget Ply
-nuget System.Text.Json
 nuget Thoth.Json
 nuget Thoth.Json.Net
 nuget Newtonsoft.Json
@@ -31,51 +28,81 @@ nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File
 nuget Argu
 
-group Tools
+// This catch-all group coves all dependencies not needed by StreamDeckDotnet
+group Tooling
     storage: none
     source https://www.nuget.org/api/v2
     source https://api.nuget.org/v3/index.json
+
+    nuget Expecto
+    nuget YoloDev.Expecto.TestSdk
+    nuget Microsoft.NET.Test.Sdk
+    nuget altcover ~> 6
+    nuget Fable.Browser.Dom ~> 2
+    nuget Fable.Core ~> 3
+    nuget Elmish.Bridge.Client ~> 3
+
+#group Fable
+    #source https://api.nuget.org/v3/index.json
+
+    # nuget FSharp.Core ~> 5.0
+    
+
+#group Tools
+#    storage: none
+#    source https://www.nuget.org/api/v2
+#    source https://api.nuget.org/v3/index.json
 
     nuget Spectre.Console
-    nuget Fake.IO.FileSystem ~> 5.20
-    nuget Fake.Core.Target ~> 5.20
-    nuget Fake.DotNet.Cli ~> 5.20
-    nuget FAKE.Core.Process ~> 5.20
+#    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
+#    nuget Fake.Core.Target ~> 5.20.4-alpha.1642
+#    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
+#    nuget FAKE.Core.Process ~> 5.20.4-alpha.1642
 
 // [ FAKE GROUP ]
-group Build
-    storage: none
-    source https://www.nuget.org/api/v2
-    source https://api.nuget.org/v3/index.json
-    nuget Fake.IO.FileSystem ~> 5.20
-    nuget Fake.Core.Target ~> 5.20
-    nuget Fake.Core.ReleaseNotes ~> 5.20
-    nuget FAKE.Core.Environment ~> 5.20
-    nuget Fake.DotNet.Cli ~> 5.20
-    nuget FAKE.Core.Process ~> 5.20
-    nuget Fake.DotNet.AssemblyInfoFile ~> 5.20
-    nuget Fake.Tools.Git ~> 5.20
-    nuget Fake.DotNet.Paket ~> 5.20
-    nuget Fake.Api.GitHub ~> 5.20
-    nuget Fake.BuildServer.AppVeyor ~> 5.20
-    nuget Fake.BuildServer.Travis ~> 5.20
-    nuget Fantomas
-    nuget Argu
+#group Build
+#    storage: none
+#    source https://www.nuget.org/api/v2
+#    source https://api.nuget.org/v3/index.json
 
-group Docs
-    storage: none
-    source https://www.nuget.org/api/v2
-    source https://api.nuget.org/v3/index.json
-    nuget Argu
-    nuget FSharp.Core
-    nuget Fake.IO.FileSystem ~> 5.20
-    nuget FAKE.Core.Environment ~> 5.20
-    nuget Fake.DotNet.Cli ~> 5.20
+    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
+    nuget Fake.Core.Target ~> 5.20.4-alpha.1642
+    nuget Fake.Core.ReleaseNotes ~> 5.20.4-alpha.1642
+    nuget FAKE.Core.Environment ~> 5.20.4-alpha.1642
+    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
+    nuget FAKE.Core.Process ~> 5.20.4-alpha.1642
+    nuget Fake.DotNet.AssemblyInfoFile ~> 5.20.4-alpha.1642
+    nuget Fake.Tools.Git ~> 5.20.4-alpha.1642
+    nuget Fake.DotNet.Paket ~> 5.20.4-alpha.1642
+    nuget Fake.Api.GitHub ~> 5.20.4-alpha.1642
+    nuget Fake.BuildServer.AppVeyor ~> 5.20.4-alpha.1642
+    nuget Fake.BuildServer.Travis ~> 5.20.4-alpha.1642
+    nuget Fantomas
+#nuget Argu
+
+#group Docs
+#    storage: none
+#    source https://www.nuget.org/api/v2
+#    source https://api.nuget.org/v3/index.json
+#    nuget Argu
+    #nuget FSharp.Core
+#    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
+#    nuget FAKE.Core.Environment ~> 5.20.4-alpha.1642
+#    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
     nuget FSharp.Formatting 4.0.0-rc1
     nuget FSharp.Literate 4.0.0-rc1
     nuget Fable.React
 
-group Analyzers
-  source https://www.nuget.org/api/v2
-  source https://api.nuget.org/v3/index.json
-  nuget BinaryDefense.FSharp.Analyzers.Hashing 0.1.0
+#group Analyzers
+#  source https://www.nuget.org/api/v2
+#  source https://api.nuget.org/v3/index.json
+    nuget BinaryDefense.FSharp.Analyzers.Hashing 0.1.0
+
+    #stuff for Example.Client
+    nuget Fable.Core
+    nuget Fable.Browser.Dom
+    nuget Elmish.Bridge.Client
+
+// package resolution packages
+// not directly needed but paket sometimes needs a hand
+    nuget NuGet.FrameWorks >= 5.8

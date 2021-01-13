@@ -1,8 +1,10 @@
-Expecto
 FSharp.Core
+Thoth.Json.Net
+
+group Tooling
+Expecto
 Microsoft.NET.Test.Sdk
 YoloDev.Expecto.TestSdk
 altcover
-Microsoft.NETFramework.ReferenceAssemblies
-System.Text.Json
-Thoth.Json.Net
+#Microsoft.NETFramework.ReferenceAssemblies
+#System.Text.Json

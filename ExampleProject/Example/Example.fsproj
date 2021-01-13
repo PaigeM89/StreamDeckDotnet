@@ -10,6 +10,7 @@
       <Link>paket-files/FsLibLog.fs</Link>
     </Compile>
     <Compile Include="LogEnricher.fs" />
+    <Compile Include="../shared/Messages.fs" />
     <Compile Include="Routing.fs" />
     <Compile Include="ArgsParsing.fs" />
     <Compile Include="Program.fs" />

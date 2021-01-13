@@ -28,12 +28,6 @@ let logger = LogProvider.getLoggerByName("Example.Program")
 let main argv =
   Log.setMessage("Starting example project") |> logger.trace
   let routes = ExampleProject.Routing.routes
-  // let args = {
-  //   StreamDeckSocketArgs.Port = 28196
-  //   Id = System.Guid.NewGuid()
-  //   RegisterEvent = "registerPlugin"
-  //   Info = ""
-  //}
 
   let args = ArgsParsing.parseArgs argv
 

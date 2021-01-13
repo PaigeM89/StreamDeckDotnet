@@ -1,0 +1,8 @@
+# group Fable
+
+FSharp.Core
+
+group Tooling
+Elmish.Bridge.Client
+Fable.Browser.Dom
+Fable.Core

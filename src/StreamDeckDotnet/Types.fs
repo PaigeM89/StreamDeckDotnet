@@ -146,10 +146,12 @@ module Events =
       | SystemWakeUp -> "SystemWakeUp"
 
   type EventSent =
+  | InRegisterEvent of pluginUUID : Guid
   | LogMessage of LogMessagePayload
   with
     member this.Encode context device =
       match this with
+      | InRegisterEvent id -> Thoth.Json.Net.Encode.toString 0 (JValue(id))
       | LogMessage payload ->
         Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
 
