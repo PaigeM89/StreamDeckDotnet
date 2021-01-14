@@ -17,7 +17,7 @@
   ], 
   "SDKVersion": 2,
   "Author": "Max Paige", 
-  "CodePath": "code/Example.dll", 
+  "CodePath": "code/Example", 
   "Description": "This lets you display the number of times you pressed on the key.", 
   "Name": "Example Plugin", 
   "Icon": "pluginIcon", 
