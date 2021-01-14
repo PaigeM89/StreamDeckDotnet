@@ -20,7 +20,7 @@ open Fake.Api
 //open Fake.Api.Github
 open Fake.BuildServer
 open Fantomas
-//open Fantomas.FakeHelpers
+open Fantomas.FakeHelpers
 
 BuildServer.install [
     AppVeyor.Installer
@@ -357,13 +357,15 @@ let updateChangelog ctx =
     changelog.Entries
     |> List.tryFind (fun entry -> entry.SemVer = newVersion)
     |> Option.iter (fun entry ->
-        Trace.traceErrorfn "Version %s already exists in %s, released on %s" verStr changelogFilename (if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)")
+        let releaseDate = if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)"
+        Trace.traceErrorfn "Version %s already exists in %s, released on %s" verStr changelogFilename releaseDate
         failwith "Can't release with a duplicate version number"
     )
     changelog.Entries
     |> List.tryFind (fun entry -> entry.SemVer > newVersion)
     |> Option.iter (fun entry ->
-        Trace.traceErrorfn "You're trying to release version %s, but a later version %s already exists, released on %s" verStr entry.SemVer.AsString (if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)")
+        let releaseDate = if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)"
+        Trace.traceErrorfn "You're trying to release version %s, but a later version %s already exists, released on %s" verStr entry.SemVer.AsString releaseDate
         failwith "Can't release with a version number older than an existing release"
     )
     let versionTuple version = (version.Major, version.Minor, version.Patch)
@@ -464,11 +466,11 @@ let buildExample ctx =
 
         }) proj
 
-    Fake.JavaScript.Npm.exec "run build" { fun o ->
+    Fake.JavaScript.Npm.exec "run build" ( fun o ->
         { o with
                 WorkingDirectory = "ExampleProject/Example.Client"
         }
-    }
+    )
 
 let fsharpAnalyzers ctx =
     let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")

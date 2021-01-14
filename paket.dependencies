@@ -25,12 +25,6 @@ nuget Serilog.Settings.Configuration
 nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File
 
-// This catch-all group coves all dependencies not needed by StreamDeckDotnet
-//group Tooling
-    //storage: none
-    //source https://www.nuget.org/api/v2
-    //source https://api.nuget.org/v3/index.json
-
 
 nuget Argu ~> 6
 nuget Expecto
@@ -44,10 +38,6 @@ group Example
     source https://api.nuget.org/v3/index.json
 
     nuget Argu ~> 6
-#group Fable
-    #source https://api.nuget.org/v3/index.json
-
-    # nuget FSharp.Core ~> 5.0
 
 
 group Tools
@@ -64,7 +54,6 @@ group Tools
 // [ FAKE GROUP ]
 group Build
     storage: none
-#    source https://www.nuget.org/api/v2
     source https://api.nuget.org/v3/index.json
 
     nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
@@ -80,7 +69,7 @@ group Build
     nuget Fake.BuildServer.AppVeyor ~> 5.20.4-alpha.1642
     nuget Fake.BuildServer.Travis ~> 5.20.4-alpha.1642
     nuget Fake.JavaScript.Npm ~> 5.20.4-alpha.1642
-    nuget Fantomas
+    nuget Fantomas ~> 3.2
     nuget Argu
 
 group Docs
@@ -102,7 +91,7 @@ group Analyzers
 
     nuget BinaryDefense.FSharp.Analyzers.Hashing 0.1.0
 
-    #stuff for Example.Client
+#stuff for Example.Client
 group Fable
     source https://www.nuget.org/api/v2
     source https://api.nuget.org/v3/index.json
@@ -111,8 +100,6 @@ group Fable
     nuget Fable.Elmish
     nuget Fable.Elmish.React
     nuget Elmish.Bridge.Client ~> 3
-//nuget Thoth.Json ~> 5.1
-//nuget Thoth.Json.Net
 
 // package resolution packages
 // not directly needed but paket sometimes needs a hand
