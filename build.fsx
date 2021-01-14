@@ -584,21 +584,31 @@ let runMimic _ =
             args
     printfn "Process Result is %A" pr
 
-let packageExample ctx =
+let packageExamplePlugin ctx =
     Shell.cleanDir examplePluginPath
     // copy all root files
+    let clientSrc = "./ExampleProject/Example.Client"
     Shell.copy
         examplePluginPath
         [ 
-            examplePluginPath @@ "manifest.json"
+            clientSrc @@ "manifest.json"
         ]
 
     //copy the property inspector files
     Shell.copy
         (examplePluginPath @@ "propertyinspector")
         [
-           examplePluginPath @@ "Example.Client" @@  "public" @@ "index.html" 
+           clientSrc @@ "public" @@ "index.html"
+           clientSrc @@ "output" @@ "bundle.js"
         ]
+
+    let codeSrc = "./ExampleProject/Example"
+    Shell.copy
+        (examplePluginPath @@ "code")
+        [
+            codeSrc @@ "bin/Debug/net5.0/*"
+        ]
+    
     ()
 
 let generateAssemblyInfo _ =
@@ -765,7 +775,7 @@ Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this 
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
 Target.create "BuildExample" buildExample
-Target.create "PackageExample" packageExample
+Target.create "PackageExample" packageExamplePlugin
 Target.create "RunMimic" runMimic
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest

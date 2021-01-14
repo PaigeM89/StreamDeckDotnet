@@ -44,7 +44,7 @@ module RoutingEngineTests =
         |> List.map (fun x -> 
             match x with
             | Events.EventSent.LogMessage { Message = payload } -> payload.ToString()
-            //| _ -> ""
+            | _ -> ""
         )
 
     [<Tests>]

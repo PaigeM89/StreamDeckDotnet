@@ -1,6 +1,6 @@
 FSharp.Core
 Thoth.Json
-Thoth.Json.Net
+//Thoth.Json.Net
 
 group Fable
   Fable.Core

@@ -17,27 +17,27 @@ module App
 
 //open Thoth.Json
 
-module Types =
-    #if FABLE_COMPILER
-    open Thoth.Json
-    #else
-    open Thoth.Json.Net
-    #endif
+// module Types =
+//     // #if FABLE_COMPILER
+//     // open Thoth.Json
+//     // #else
+//     // open Thoth.Json.Net
+//     // #endif
 
-    type PropertyInspectorRegisterEvent = {
-        Event : string
-        UUID : System.Guid
-    } with
-        static member Default() = {
-            Event = "registerPropertyInspector"
-            UUID = System.Guid.Empty
-        }
+//     type PropertyInspectorRegisterEvent = {
+//         Event : string
+//         UUID : System.Guid
+//     } with
+//         static member Default() = {
+//             Event = "registerPropertyInspector"
+//             UUID = System.Guid.Empty
+//         }
 
-        member this.Encode() =
-            Encode.object [
-                "event", Encode.string this.Event
-                "uuid", Encode.guid this.UUID
-            ]
+//         member this.Encode() =
+//             Thoth.Json.Encode.object [
+//                 "event", Encode.string this.Event
+//                 "uuid", Encode.guid this.UUID
+//             ]
 
 open Elmish
 open Elmish.Bridge
