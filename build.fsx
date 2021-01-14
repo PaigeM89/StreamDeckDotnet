@@ -603,11 +603,10 @@ let packageExamplePlugin ctx =
         ]
 
     let codeSrc = "./ExampleProject/Example"
-    Shell.copy
+    Shell.copyDir
         (examplePluginPath @@ "code")
-        [
-            codeSrc @@ "bin/Debug/net5.0/*"
-        ]
+        (codeSrc @@ "bin/Debug/net5.0")
+        (fun _ -> true)
     
     ()
 

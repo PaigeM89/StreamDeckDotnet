@@ -12,12 +12,12 @@
       ], 
       "SupportedInMultiActions": false,
       "Tooltip": "How many times did you get pwned today? Keep track with this counter.", 
-      "UUID": "com.elgato.counter.action"
+      "UUID": "org.StreamDeckDotnet.Example.Plugin"
     }
   ], 
   "SDKVersion": 2,
   "Author": "Max Paige", 
-  "CodePath": "code.html", 
+  "CodePath": "code/Example.dll", 
   "Description": "This lets you display the number of times you pressed on the key.", 
   "Name": "Example Plugin", 
   "Icon": "pluginIcon", 

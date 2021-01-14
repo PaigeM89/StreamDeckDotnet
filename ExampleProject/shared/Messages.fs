@@ -7,13 +7,11 @@ type ClientMessage =
 | HelloFromClient of string
 
 module Types =
-    // #if FABLE_COMPILER
-    // open Thoth.Json
-    // #else
-    // open Thoth.Json.Net
-    // #endif
-
+    #if FABLE_COMPILER
     open Thoth.Json
+    #else
+    open Thoth.Json.Net
+    #endif
 
     type PropertyInspectorRegisterEvent = {
         Event : string
@@ -25,7 +23,7 @@ module Types =
         }
 
         member this.Encode() =
-            Thoth.Json.Encode.object [
+            Encode.object [
                 "event", Encode.string this.Event
                 "uuid", Encode.guid this.UUID
             ]

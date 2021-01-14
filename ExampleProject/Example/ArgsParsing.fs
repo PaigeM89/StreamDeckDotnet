@@ -7,10 +7,10 @@ module ArgsParsing =
   open StreamDeckDotnet.Websockets
 
   type Arguments =
-  | [<Mandatory>] Port of int
-  | [<Mandatory>][<AltCommandLine("--pluginUUID")>] PluginUUID of Guid
-  | [<Mandatory>][<AltCommandLine("--registerEvent")>] RegisterEvent of string
-  | Info of string
+  | [<Mandatory>][<AltCommandLine("-port")>] Port of int
+  | [<Mandatory>][<AltCommandLine("-pluginUUID")>] PluginUUID of Guid
+  | [<Mandatory>][<AltCommandLine("-registerEvent")>] RegisterEvent of string
+  | [<AltCommandLine("-info")>]Info of string
     interface IArgParserTemplate with
       member s.Usage =
         match s with

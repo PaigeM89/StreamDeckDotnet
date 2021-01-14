@@ -1,8 +1,7 @@
 FSharp.Core
-Thoth.Json
-//Thoth.Json.Net
 
 group Fable
+  Thoth.Json
   Fable.Core
   Fable.Browser.Dom
   Fable.Elmish

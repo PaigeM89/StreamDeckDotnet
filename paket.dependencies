@@ -16,7 +16,6 @@ nuget Microsoft.Extensions.Logging.Console
 nuget Microsoft.Extensions.Logging.Debug
 
 nuget Ply
-nuget Thoth.Json ~> 5.1
 nuget Thoth.Json.Net
 nuget Newtonsoft.Json
 nuget FsToolkit.ErrorHandling
@@ -95,6 +94,7 @@ group Analyzers
 group Fable
     source https://www.nuget.org/api/v2
     source https://api.nuget.org/v3/index.json
+    nuget Thoth.Json ~> 5.1
     nuget Fable.Core ~> 3
     nuget Fable.Browser.Dom ~> 2
     nuget Fable.Elmish

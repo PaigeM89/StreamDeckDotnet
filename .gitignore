@@ -274,3 +274,5 @@ ExampleProject/Example/log.txt
 tests/StreamDeckDotnet.Tests/coverage.xml.637460551067072260L.exn
 tools/StreamDeck.Mimic/log.txt
 log.txt
+ExampleProject/Example/publish/*
+ExampleProject/org.StreamDeckDotnet.Example.sdPlugin/*

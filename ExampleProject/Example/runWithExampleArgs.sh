@@ -1,0 +1,1 @@
+dotnet run -- -port 28196 -pluginUUID '1FC5297759909F71B185131569C45BEF' -registerEvent 'registerPlugin' -info '{"application":{"language":"en","platform":"mac","version":"4.9.2.13193"},"devicePixelRatio":2,"devices":[{"id":"","name":"Stream Deck","size":{"columns":5,"rows":3}}],"plugin":{"version":"0.1"}}'

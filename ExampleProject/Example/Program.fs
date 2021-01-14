@@ -27,6 +27,8 @@ let logger = LogProvider.getLoggerByName("Example.Program")
 [<EntryPoint>]
 let main argv =
   Log.setMessage("Starting example project") |> logger.trace
+  for arg in argv do
+    Log.setMessage($"Arg is {arg}") |> logger.trace
   let routes = ExampleProject.Routing.routes
 
   let args = ArgsParsing.parseArgs argv
