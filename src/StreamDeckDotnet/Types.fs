@@ -3,7 +3,6 @@ namespace StreamDeckDotnet
 open System
 
 module Types =
-  //open System.Text.Json
   open Newtonsoft.Json
   open Newtonsoft.Json.Linq
   open Thoth.Json.Net
@@ -91,18 +90,18 @@ module Types =
   module Sent =
     open Newtonsoft.Json.Linq
 
-    type Wrapper<'a> = {
-      Event : string
-      Context : string option
-      Device : string option
-      Payload : 'a option
-    } with
-      static member Create(event : string) = {
-        Event = event
-        Context = None
-        Device = None
-        Payload = None
-      }
+    // type Wrapper<'a> = {
+    //   Event : string
+    //   Context : string option
+    //   Device : string option
+    //   Payload : 'a option
+    // } with
+    //   static member Create(event : string) = {
+    //     Event = event
+    //     Context = None
+    //     Device = None
+    //     Payload = None
+    //   }
 
     let encodeWithWrapper (context: string option) (device : string option) event payload =
       Encode.object [

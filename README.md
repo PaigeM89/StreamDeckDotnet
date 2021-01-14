@@ -10,6 +10,8 @@ elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-r
 
 routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=aspnetcore-5.0#routing-basics
 
+https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
+
 ---
 
 ## Builds

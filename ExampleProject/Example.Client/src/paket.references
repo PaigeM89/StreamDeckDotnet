@@ -1,8 +1,10 @@
-# group Fable
-
-FSharp.Core
-
 group Tooling
-Elmish.Bridge.Client
-Fable.Browser.Dom
+FSharp.Core
+Thoth.Json
+Thoth.Json.Net
+
 Fable.Core
+Fable.Browser.Dom
+Fable.Elmish
+Fable.Elmish.React
+Elmish.Bridge.Client

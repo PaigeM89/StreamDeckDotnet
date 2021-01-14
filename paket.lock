@@ -5,8 +5,8 @@ NUGET
     Argu (6.1.1)
       FSharp.Core (>= 4.3.2)
       System.Configuration.ConfigurationManager (>= 4.4)
-    Fable.Core (3.1.5)
-      FSharp.Core (>= 4.7)
+    Fable.Core (3.2.3)
+      FSharp.Core (>= 4.7.2)
     FSharp.Core (5.0)
     FsToolkit.ErrorHandling (2.0)
       FSharp.Core (>= 4.6.2)
@@ -220,9 +220,9 @@ NUGET
       System.Runtime (>= 4.3)
     System.Windows.Extensions (5.0) - restriction: || (== net50) (&& (== netstandard2.1) (>= netcoreapp3.0))
       System.Drawing.Common (>= 5.0) - restriction: || (== net50) (&& (== netstandard2.1) (>= netcoreapp3.0))
-    Thoth.Json (5.0)
-      Fable.Core (>= 3.1.4)
-      FSharp.Core (>= 4.7)
+    Thoth.Json (5.1)
+      Fable.Core (>= 3.1.6)
+      FSharp.Core (>= 4.7.2)
     Thoth.Json.Net (5.0)
       Fable.Core (>= 3.0 < 4.0)
       FSharp.Core (>= 4.7.2)
@@ -258,7 +258,7 @@ NUGET
       Fable.Browser.WebSocket (>= 1.0) - restriction: >= netstandard2.0
       Fable.Elmish (>= 3.1) - restriction: >= netstandard2.0
       Fable.SimpleJson (>= 3.10) - restriction: >= netstandard2.0
-    Expecto (9.0.2) - restriction: >= netcoreapp2.1
+    Expecto (9.0.2)
       FSharp.Core (>= 4.6) - restriction: || (>= net461) (>= netstandard2.0)
       Mono.Cecil (>= 0.11.2) - restriction: || (>= net461) (>= netstandard2.0)
     Fable.Browser.Blob (1.1) - restriction: >= netstandard2.0
@@ -286,8 +286,13 @@ NUGET
       FSharp.Core (>= 4.5.2) - restriction: >= netstandard2.0
     Fable.Core (3.2.3)
       FSharp.Core (>= 4.7.2) - restriction: >= netstandard2.0
-    Fable.Elmish (3.1) - restriction: >= netstandard2.0
+    Fable.Elmish (3.1)
       Fable.Core (>= 3.0) - restriction: >= netstandard2.0
+      FSharp.Core (>= 4.6.2) - restriction: >= netstandard2.0
+    Fable.Elmish.React (3.0.1)
+      Fable.Core (>= 3.0) - restriction: >= netstandard2.0
+      Fable.Elmish (>= 3.0) - restriction: >= netstandard2.0
+      Fable.React (>= 5.1) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.6.2) - restriction: >= netstandard2.0
     Fable.Parsimmon (4.1) - restriction: >= netstandard2.0
       Fable.Core (>= 3.0) - restriction: >= netstandard2.0
@@ -461,7 +466,7 @@ NUGET
     FSharp.Control.Reactive (4.5) - restriction: >= netstandard2.0
       FSharp.Core (>= 4.7.2) - restriction: || (>= net46) (>= netstandard2.0)
       System.Reactive (>= 4.4.1) - restriction: || (>= net46) (>= netstandard2.0)
-    FSharp.Core (5.0) - restriction: >= netstandard2.0
+    FSharp.Core (5.0)
     FSharp.Formatting (4.0.0-rc1)
       FSharp.Compiler.Service (>= 34.1) - restriction: >= netstandard2.0
     FSharp.Literate (4.0.0-rc1)
@@ -544,7 +549,7 @@ NUGET
       Microsoft.Build.Framework (>= 16.4) - restriction: >= netstandard2.0
       Microsoft.Build.Tasks.Core (>= 16.4) - restriction: >= netstandard2.0
       Microsoft.Build.Utilities.Core (>= 16.4) - restriction: >= netstandard2.0
-    Newtonsoft.Json (12.0.3) - restriction: || (>= netstandard2.0) (>= uap10.0)
+    Newtonsoft.Json (12.0.3) - restriction: || (>= net46) (>= netstandard2.0) (>= uap10.0)
     NuGet.Common (5.8) - restriction: >= netstandard2.0
       NuGet.Frameworks (>= 5.8) - restriction: || (>= net45) (>= netstandard2.0)
     NuGet.Configuration (5.8) - restriction: >= netstandard2.0
@@ -1058,10 +1063,17 @@ NUGET
     System.ValueTuple (4.5) - restriction: || (&& (>= net45) (>= netstandard2.0)) (&& (>= net461) (>= netcoreapp2.1)) (>= net472)
     System.Windows.Extensions (5.0) - restriction: >= netcoreapp3.0
       System.Drawing.Common (>= 5.0) - restriction: >= netcoreapp3.0
+    Thoth.Json (5.1)
+      Fable.Core (>= 3.1.6) - restriction: >= netstandard2.0
+      FSharp.Core (>= 4.7.2) - restriction: >= netstandard2.0
+    Thoth.Json.Net (5.0)
+      Fable.Core (>= 3.0 < 4.0) - restriction: && (< net46) (>= netstandard2.0)
+      FSharp.Core (>= 4.7.2) - restriction: || (>= net46) (>= netstandard2.0)
+      Newtonsoft.Json (>= 11.0.2) - restriction: || (>= net46) (>= netstandard2.0)
     Wcwidth (0.2) - restriction: >= netstandard2.0
     YoloDev.Expecto.TestSdk (0.11.1)
       Expecto (>= 9.0 < 10.0) - restriction: >= netcoreapp2.1
       FSharp.Core (>= 4.6) - restriction: >= netcoreapp2.1
       System.Collections.Immutable (>= 1.5 < 5.1) - restriction: >= netcoreapp2.1
   remote: https://api.nuget.org/v3/index.json
-    Mono.Cecil (0.11.3) - restriction: >= netcoreapp2.1
+    Mono.Cecil (0.11.3) - restriction: || (>= net461) (>= netstandard2.0)
