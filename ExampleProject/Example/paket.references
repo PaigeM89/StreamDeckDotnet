@@ -8,6 +8,9 @@ Serilog
 Serilog.Sinks.Console
 Serilog.Sinks.File
 Serilog.Settings.Configuration
-Argu
+
 
 File:FsLibLog.fs
+
+group Example
+  Argu

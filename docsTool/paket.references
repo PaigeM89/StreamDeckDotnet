@@ -1,7 +1,6 @@
-Argu
-
-group Tooling
+group Docs
 FSharp.Core
+Argu
 Fake.IO.FileSystem
 Fake.DotNet.Cli
 FSharp.Formatting

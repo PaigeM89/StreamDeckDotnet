@@ -1,4 +1,5 @@
 open Argu
+//#r "paket: nuget FSharp.Core //"
 #load ".fake/build.fsx/intellisense.fsx"
 #load "docsTool/CLI.fs"
 #if !FAKE
@@ -14,10 +15,12 @@ open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
+//open Fake.JavaScript.Npm
 open Fake.Api
+//open Fake.Api.Github
 open Fake.BuildServer
 open Fantomas
-open Fantomas.FakeHelpers
+//open Fantomas.FakeHelpers
 
 BuildServer.install [
     AppVeyor.Installer
@@ -72,6 +75,8 @@ let coverageReportDir =  __SOURCE_DIRECTORY__  @@ "docs" @@ "coverage"
 let docsDir = __SOURCE_DIRECTORY__  @@ "docs"
 let docsSrcDir = __SOURCE_DIRECTORY__  @@ "docsSrc"
 let docsToolDir = __SOURCE_DIRECTORY__ @@ "docsTool"
+
+let examplePluginPath = __SOURCE_DIRECTORY__ @@ "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
 
 let gitOwner = "PaigeM89"
 let gitRepoName = "StreamDeckDotnet"
@@ -428,7 +433,6 @@ let dotnetBuild ctx =
             Common =
                 c.Common
                 |> DotNet.Options.withAdditionalArgs args
-
         }) sln
 
 let buildExample ctx =
@@ -445,7 +449,7 @@ let buildExample ctx =
                     |> DotNet.Options.withCustomParams
                         (Some(args))
             }) dir)
-    |> Seq.iter(retryIfInCI 10)
+    |> Seq.iter(retryIfInCI 2)
     let args =
         [
             sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
@@ -459,6 +463,12 @@ let buildExample ctx =
                 |> DotNet.Options.withAdditionalArgs args
 
         }) proj
+
+    Fake.JavaScript.Npm.exec "run build" { fun o ->
+        { o with
+                WorkingDirectory = "ExampleProject/Example.Client"
+        }
+    }
 
 let fsharpAnalyzers ctx =
     let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
@@ -571,6 +581,23 @@ let runMimic _ =
             mimicDll 
             args
     printfn "Process Result is %A" pr
+
+let packageExample ctx =
+    Shell.cleanDir examplePluginPath
+    // copy all root files
+    Shell.copy
+        examplePluginPath
+        [ 
+            examplePluginPath @@ "manifest.json"
+        ]
+
+    //copy the property inspector files
+    Shell.copy
+        (examplePluginPath @@ "propertyinspector")
+        [
+           examplePluginPath @@ "Example.Client" @@  "public" @@ "index.html" 
+        ]
+    ()
 
 let generateAssemblyInfo _ =
 
@@ -736,6 +763,7 @@ Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this 
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
 Target.create "BuildExample" buildExample
+Target.create "PackageExample" packageExample
 Target.create "RunMimic" runMimic
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
@@ -786,6 +814,8 @@ Target.create "ReleaseDocs" releaseDocs
     ==> "DotnetBuild"
 
 "DotnetBuild" ==> "BuildExample"
+
+"BuildExample" ==> "PackageExample"
 
 "DotnetRestore"
     ==> "DotnetBuild"

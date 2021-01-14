@@ -104,7 +104,6 @@ module Models =
     type Msg = 
     | Increment 
     | Decrement
-    | TurnOnWebSocket
 
 module Updates =
     open Models
@@ -115,9 +114,6 @@ module Updates =
         match msg with
         | Increment -> count + 1
         | Decrement -> count - 1
-        | TurnOnWebSocket ->
-
-            count
 
 module View =
     open Models
@@ -130,7 +126,6 @@ module View =
             [   button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ]
                 div [] [ str (sprintf "%A" model) ]
                 button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ] 
-                button [ OnClick (fun _ -> dispatch TurnOnWebSocket )] [ str "Turn on websocket" ]
             ]
 
 open Elmish.React

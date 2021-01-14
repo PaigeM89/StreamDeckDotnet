@@ -1,8 +1,8 @@
 FSharp.Core
 Argu
 
-group Tooling
-Spectre.Console
-Fake.IO.FileSystem
-Fake.Core.Target
-Fake.DotNet.Cli
+group Tools
+  Spectre.Console
+  Fake.IO.FileSystem
+  Fake.Core.Target
+  Fake.DotNet.Cli

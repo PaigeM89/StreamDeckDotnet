@@ -4,6 +4,8 @@
 
 Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugins/`
 
+Logs live in `~/Library/Logs/StreamDeck/`
+
 Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
 
 elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
@@ -11,6 +13,12 @@ elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-r
 routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=aspnetcore-5.0#routing-basics
 
 https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
+
+I _think_ that both the plugin and the property inspector are clients, and the streamdeck app is the server. This has not been clear to me from the beginning.
+
+## mimic
+
+I don't know if this will be possible based on how the sockets are supposed to work? but maybe.
 
 ---
 

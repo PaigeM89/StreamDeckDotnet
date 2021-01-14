@@ -1,10 +1,10 @@
-group Tooling
 FSharp.Core
 Thoth.Json
 Thoth.Json.Net
 
-Fable.Core
-Fable.Browser.Dom
-Fable.Elmish
-Fable.Elmish.React
-Elmish.Bridge.Client
+group Fable
+  Fable.Core
+  Fable.Browser.Dom
+  Fable.Elmish
+  Fable.Elmish.React
+  Elmish.Bridge.Client
