@@ -34,7 +34,9 @@ module Websockets =
 
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
-  type StreamDeckConnection(args : StreamDeckSocketArgs, receiveHandler : string -> Async<Context.EventContext>) =
+  type StreamDeckConnection(args : StreamDeckSocketArgs, 
+                            receiveHandler : string -> Async<Context.EventContext>,
+                            registrationHandler : unit -> string) =
       let mutable _websocket : ClientWebSocket = new ClientWebSocket()
       let _cancelSource = new CancellationTokenSource()
       let _semaphore = new SemaphoreSlim(1)
@@ -165,7 +167,11 @@ module Websockets =
               ()
             else
               !! "Web socket successfully connected, sending response" |> logger.trace
-              do! this.SendToSocketAsync("response from web socket!")
+              let response = registrationHandler()
+              !! "Response being sent to web socket is \"{response}\""
+              >>!- ("response", response)
+              |> logger.info
+              do! this.SendToSocketAsync(response)
             !! "this.Receive() call in runAsync" |> logger.trace
             do! this.Receive()
             !! "Receive() received, returning in work func" |> logger.trace

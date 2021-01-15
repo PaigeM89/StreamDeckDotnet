@@ -31,12 +31,14 @@ let main argv =
     Log.setMessage($"Arg is {arg}") |> logger.trace
   let routes = ExampleProject.Routing.routes
 
+  Log.setMessage "Parsing args..." |> logger.trace
   let args = ArgsParsing.parseArgs argv
+  Log.setMessage "Parsed args are {pargs}" >> Log.addContextDestructured "pargs" args |> logger.info
 
   Log.setMessage("Creating client") |> logger.trace
   let client = StreamDeckClient(args, routes)
-  Log.setMessage("Running client") |> logger.trace
   try
+    Log.setMessage("Running client") |> logger.trace
     client.Run()
   with
   | e ->
@@ -44,6 +46,8 @@ let main argv =
     >> Log.addContext "msg" e.Message
     >> Log.addExn e
     |> logger.error
+
+  Log.setMessage "Exiting client.run, exiting program" |> logger.trace
 
   printfn "Exiting client.run, exiting program"
   0 // return an integer exit code

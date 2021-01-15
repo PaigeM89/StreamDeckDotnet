@@ -437,40 +437,6 @@ let dotnetBuild ctx =
                 |> DotNet.Options.withAdditionalArgs args
         }) sln
 
-let buildExample ctx =
-    let proj = "ExampleProject/Example/Example.fsproj"
-    [proj]
-    |> Seq.map(fun dir -> fun () ->
-        let args =
-            [
-            ] |> String.concat " "
-        DotNet.restore(fun c ->
-            { c with
-                Common =
-                    c.Common
-                    |> DotNet.Options.withCustomParams
-                        (Some(args))
-            }) dir)
-    |> Seq.iter(retryIfInCI 2)
-    let args =
-        [
-            sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
-            "--no-restore"
-        ]
-    DotNet.build(fun c ->
-        { c with
-            Configuration = configuration (ctx.Context.AllExecutingTargets)
-            Common =
-                c.Common
-                |> DotNet.Options.withAdditionalArgs args
-
-        }) proj
-
-    Fake.JavaScript.Npm.exec "run build" ( fun o ->
-        { o with
-                WorkingDirectory = "ExampleProject/Example.Client"
-        }
-    )
 
 let fsharpAnalyzers ctx =
     let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
@@ -584,31 +550,118 @@ let runMimic _ =
             args
     printfn "Process Result is %A" pr
 
-let packageExamplePlugin ctx =
-    Shell.cleanDir examplePluginPath
-    // copy all root files
-    let clientSrc = "./ExampleProject/Example.Client"
-    Shell.copy
-        examplePluginPath
-        [ 
-            clientSrc @@ "manifest.json"
-        ]
+module ExampleProject =
 
-    //copy the property inspector files
-    Shell.copy
-        (examplePluginPath @@ "propertyinspector")
-        [
-           clientSrc @@ "public" @@ "index.html"
-           clientSrc @@ "output" @@ "bundle.js"
-        ]
+    let buildExample ctx =
+        let proj = "ExampleProject/Example/Example.fsproj"
+        [proj]
+        |> Seq.map(fun dir -> fun () ->
+            let args =
+                [
+                ] |> String.concat " "
+            DotNet.restore(fun c ->
+                { c with
+                    Common =
+                        c.Common
+                        |> DotNet.Options.withCustomParams
+                            (Some(args))
+                }) dir)
+        |> Seq.iter(retryIfInCI 2)
+        let args =
+            [
+                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
+                "--no-restore"
+            ]
+        DotNet.build(fun c ->
+            { c with
+                Configuration = configuration (ctx.Context.AllExecutingTargets)
+                Common =
+                    c.Common
+                    |> DotNet.Options.withAdditionalArgs args
 
-    let codeSrc = "./ExampleProject/Example"
-    Shell.copyDir
-        (examplePluginPath @@ "code")
-        (codeSrc @@ "bin/Debug/net5.0")
-        (fun _ -> true)
-    
-    ()
+            }) proj
+
+        Fake.JavaScript.Npm.exec "run build" ( fun o ->
+            { o with
+                    WorkingDirectory = "ExampleProject/Example.Client"
+            }
+        )
+
+    let publishExampleProject ctx =
+        let proj = "ExampleProject/Example/Example.fsproj"
+        [proj]
+        |> Seq.map(fun dir -> fun () ->
+            let args =
+                [
+                ] |> String.concat " "
+            DotNet.restore(fun c ->
+                { c with
+                    Common =
+                        c.Common
+                        |> DotNet.Options.withCustomParams
+                            (Some(args))
+                }) dir)
+        |> Seq.iter(retryIfInCI 2)
+        let args =
+            [
+                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
+            ]
+        DotNet.publish(fun c ->
+            { c with
+                Configuration = configuration (ctx.Context.AllExecutingTargets)
+                Common =
+                    c.Common
+                    |> DotNet.Options.withAdditionalArgs args
+                Runtime = Some "osx-x64"
+            }) proj
+
+        Shell.cleanDir "ExampleProject/Example/publish"
+
+        let configuration = configuration (ctx.Context.AllExecutingTargets)
+        let configurationStr = configuration.ToString()
+
+        Shell.copyDir
+            "ExampleProject/Example/publish"
+            ("ExampleProject/Example/bin" @@ configurationStr @@ "net5.0/osx-x64/publish")
+            (fun _ -> true)
+
+
+    let packageExampleProject ctx =
+        Shell.cleanDir examplePluginPath
+        // copy all root files
+        let clientSrc = "./ExampleProject/Example.Client"
+        Shell.copy
+            examplePluginPath
+            [ 
+                clientSrc @@ "manifest.json"
+            ]
+
+        //copy the property inspector files
+        Shell.copy
+            (examplePluginPath @@ "propertyinspector")
+            [
+               clientSrc @@ "public" @@ "index.html"
+               clientSrc @@ "output" @@ "bundle.js"
+            ]
+
+        let codeSrc = "./ExampleProject/Example"
+        Shell.copyDir
+            (examplePluginPath @@ "code")
+            (codeSrc @@ "publish")
+            (fun _ -> true)
+        
+        ()
+
+    let macDeployExampleProject ctx =
+        let pluginPath = 
+            "~/Application Support/com.elgato.StreamDeck/Plugins/org.StreamDeckDotnet.Example.sdPlugin"
+        Shell.cleanDir pluginPath
+
+        Shell.copyDir
+            pluginPath
+            "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
+            (fun _ -> true)
+
 
 let generateAssemblyInfo _ =
 
@@ -773,8 +826,10 @@ Target.create "UpdateChangelog" updateChangelog
 Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this in the dependency chain
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
-Target.create "BuildExample" buildExample
-Target.create "PackageExample" packageExamplePlugin
+Target.create "BuildExample" ExampleProject.buildExample
+Target.create "PublishExample" ExampleProject.publishExampleProject
+Target.create "PackageExample" ExampleProject.packageExampleProject
+Target.create "DeployExample" ExampleProject.macDeployExampleProject
 Target.create "RunMimic" runMimic
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
@@ -826,7 +881,10 @@ Target.create "ReleaseDocs" releaseDocs
 
 "DotnetBuild" ==> "BuildExample"
 
-"BuildExample" ==> "PackageExample"
+"BuildExample"
+    ==> "PublishExample"
+    ==> "PackageExample"
+    ==> "DeployExample"
 
 "DotnetRestore"
     ==> "DotnetBuild"

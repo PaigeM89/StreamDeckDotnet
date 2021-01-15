@@ -1,5 +1,8 @@
 namespace StreamDeckDotnet
 
+open StreamDeckDotnet.Logging
+open StreamDeckDotnet.Logger
+open StreamDeckDotnet.Logger.Operators
 
 module ActionRouting = 
   open Core
@@ -66,16 +69,18 @@ module Engine =
   open Context
   open Core
 
-  type ActionDelegate = delegate of EventContext -> Async<unit>
+  let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Engine")
 
-  type ActionMiddleware(next : ActionDelegate, handler: EventHandler) =
-    let func = handler earlyReturn
+  // type ActionDelegate = delegate of EventContext -> Async<unit>
 
-    member this.Invoke (ctx : EventContext) =
-      async {
-        let! result = func ctx
-        if result.IsNone then return! next.Invoke ctx
-      }
+  // type ActionMiddleware(next : ActionDelegate, handler: EventHandler) =
+  //   let func = handler earlyReturn
+
+  //   member this.Invoke (ctx : EventContext) =
+  //     async {
+  //       let! result = func ctx
+  //       if result.IsNone then return! next.Invoke ctx
+  //     }
 
   type RequestHandler = EventFunc -> EventContext -> EventFuncResult
 
@@ -116,17 +121,33 @@ module Engine =
   // let matchActionContextToHandler (ctx : Context.ActionContext) (routes: ActionRoute list) = 
   //   ()
 
+  let handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
+    let register = Types.Sent.RegisterPlugin.Create args.RegisterEvent args.PluginUUID
+    !! "Creating registration event of {event}"
+    >>!+ ("event", register)
+    |> logger.info
+    let sendEvent = Events.EventSent.RegisterPlugin register
+    sendEvent.Encode None None //context or device not needed for this event.
+
   // handles the raw json message from the web socket
   let socketMsgHandlerR (msg : string) (routes: Core.EventHandler) = asyncResult {
     //first decode into an EventMetadata
+    !! "Decoding event metadata from msg {msg}"
+    >>!- ("msg", msg)
+    |> logger.info
     let! eventMetadata = Types.decodeEventMetadata msg
+    !! "Building context from metadata object {meta}"
+    >>!+ ("meta", eventMetadata)
+    |> logger.info
     //then build the context
     let ctx = EventContext(eventMetadata)
     
     //now match the context to the known routes
-    let t = fun ctx -> AsyncOption.retn ctx
+    let initHandler = fun ctx -> AsyncOption.retn ctx
 
-    match! routes t ctx with
+    !! "Beginning Event Handling" |> logger.trace
+
+    match! routes initHandler ctx with
     | Some ctx -> return ctx
     | None -> return ctx
   }
@@ -143,8 +164,10 @@ module Engine =
 
   type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
     let msgHandler = socketMsgHandler handler
-    let _socket = Websockets.StreamDeckConnection(args, msgHandler)
-    
+    let registerHandler = handleSocketRegister args
+
+    let _socket = Websockets.StreamDeckConnection(args, msgHandler, registerHandler)
+
     member this.Run() = _socket.Run()
 
 module TestCode =

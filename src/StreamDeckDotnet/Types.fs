@@ -90,19 +90,7 @@ module Types =
   module Sent =
     open Newtonsoft.Json.Linq
 
-    // type Wrapper<'a> = {
-    //   Event : string
-    //   Context : string option
-    //   Device : string option
-    //   Payload : 'a option
-    // } with
-    //   static member Create(event : string) = {
-    //     Event = event
-    //     Context = None
-    //     Device = None
-    //     Payload = None
-    //   }
-
+    //Encodes the payload with a wrapper containing metadata
     let encodeWithWrapper (context: string option) (device : string option) event payload =
       Encode.object [
         if context.IsSome then "context", Option.get context |> Encode.string
@@ -119,6 +107,21 @@ module Types =
             "message", Encode.string (string this.Message)
           ]
           encodeWithWrapper context device "logMessage" payload
+    
+    type RegisterPlugin = {
+      Event : string
+      PluginGuid : Guid
+    } with
+      member this.Encode() =
+        Encode.object [
+          "event", Encode.string this.Event
+          "uuid", Encode.guid this.PluginGuid 
+        ]
+      static member Create event id =
+        {
+          Event = event
+          PluginGuid = id
+        }
 
 module Events =
   open Newtonsoft.Json.Linq
@@ -145,11 +148,13 @@ module Events =
       | SystemWakeUp -> "SystemWakeUp"
 
   type EventSent =
+  | RegisterPlugin of payload: RegisterPlugin
   | InRegisterEvent of pluginUUID : Guid
   | LogMessage of LogMessagePayload
   with
     member this.Encode context device =
       match this with
+      | RegisterPlugin payload -> payload.Encode() |> Thoth.Json.Net.Encode.toString 0
       | InRegisterEvent id -> Thoth.Json.Net.Encode.toString 0 (JValue(id))
       | LogMessage payload ->
         Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
