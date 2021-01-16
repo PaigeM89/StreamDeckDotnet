@@ -18,6 +18,12 @@ module.exports = {
         libraryTarget: 'var',
         library: 'EntryPoint'
     },
+    // output: {
+    //     path: resolve('./output'),
+    //     filename: 'bundle.js',
+    //     libraryTarget: 'var',
+    //     library: 'commonjs'
+    // },
     devServer: {
         // port to inline is from elmish.bridge
         // port: 8090,

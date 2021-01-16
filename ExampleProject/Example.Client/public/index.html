@@ -1,16 +1,30 @@
 <!doctype html>
 <html>
 <head>
-  <title>Fable</title>
-  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="shortcut icon" href="fable.ico" />
+  <meta charset="utf-8" />
+  <title>Example Project</title>
+  <!-- <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+  <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+  <!-- <link rel="shortcut icon" href="fable.ico" /> -->
+  <link rel="stylesheet" href="sdpi.css">
 </head>
 <body>
-    <p>Fable is running</p>
-    <!-- <p>You can click on this button:</p>
-    <button class="my-button">Click me</button> -->
+    <!-- <p>Fable is running</p> -->
     <script src="bundle.js"></script>
-    <div id="elmish-app"></div>
+    <script type="text/JavaScript">
+      function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo) {
+        EntryPoint.connectStreamDeck(inPort, inPluginUUID, inRegisterEvent, inInfo);
+      }
+      // connectElgatoStreamDeckSocket(28196, '066931d4-5941-8f51-b2d7-9919124da68e', 'registerPlugin', '');
+      
+      // function start(port) {
+      //   EntryPoint.externalStart(port);
+      // }
+    </script>
+    <div class="spdi-wrapper">
+      <div id="elmish-app">
+        <details class="message"><summary>I'm a message inside the elmish app!</summary></details>
+      </div>
+    </div>
 </body>
 </html>

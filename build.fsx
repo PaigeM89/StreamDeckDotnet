@@ -641,6 +641,7 @@ module ExampleProject =
             (examplePluginPath @@ "propertyinspector")
             [
                clientSrc @@ "public" @@ "index.html"
+               clientSrc @@ "public" @@ "sdpi.css"
                clientSrc @@ "output" @@ "bundle.js"
             ]
 
