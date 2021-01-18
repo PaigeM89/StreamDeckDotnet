@@ -1,44 +1,5 @@
 module App
 
-// open Fable.Core
-// open Fable.Browser.Dom
-// open Browser.Dom
-
-// // Mutable variable to count the number of times we clicked the button
-// let mutable count = 0
-
-// // Get a reference to our button and cast the Element to an HTMLButtonElement
-// let myButton = document.querySelector(".my-button") :?> Browser.Types.HTMLButtonElement
-
-// // Register our listener
-// myButton.onclick <- fun _ ->
-//     count <- count + 1
-//     myButton.innerText <- sprintf "You clicked: %i time(s)" count
-
-//open Thoth.Json
-
-// module Types =
-//     // #if FABLE_COMPILER
-//     // open Thoth.Json
-//     // #else
-//     // open Thoth.Json.Net
-//     // #endif
-
-//     type PropertyInspectorRegisterEvent = {
-//         Event : string
-//         UUID : System.Guid
-//     } with
-//         static member Default() = {
-//             Event = "registerPropertyInspector"
-//             UUID = System.Guid.Empty
-//         }
-
-//         member this.Encode() =
-//             Thoth.Json.Encode.object [
-//                 "event", Encode.string this.Event
-//                 "uuid", Encode.guid this.UUID
-//             ]
-
 open Elmish
 open Elmish.Bridge
 open Example.Shared
@@ -58,10 +19,10 @@ module Websockets =
 
     let getWebsocketServerUrl (port: int) =
         sprintf "ws://localhost:%i" port
-    
+
     //https://github.com/fable-compiler/fable-browser/blob/master/src/WebSocket/Browser.WebSocket.fs
     
-    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit) =
+    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit, openHandler: unit -> unit) =
         let mutable msgQueue : string list = []
         let wsref : WebSocket option ref = ref None
         
@@ -77,7 +38,8 @@ module Websockets =
                     socket.onerror <- fun _ ->
                         printfn "Socket had error!"
                     socket.onopen <- fun e ->
-                        printfn "Socket was opened! %A" e
+                        printfn "Socket was opened, on open being called! %A" e
+                        openHandler()
                         printfn "MsgQueue is %A" msgQueue
                         msgQueue |> List.rev |> List.iter socket.send
                     socket.onclose <- fun _ ->
@@ -105,6 +67,7 @@ module Websockets =
         do createWebsocket()
 
         member this.IsOpen() =
+            printfn "in IsOpen func"
             match !wsref with
             | Some ws -> ws.readyState = WebSocketState.OPEN
             | None -> false
@@ -120,8 +83,6 @@ module Websockets =
             else
                 let payload = Json.stringify payload
                 msgQueue <- payload :: msgQueue
-
-
 
 
 module Models = 
@@ -144,6 +105,11 @@ module Models =
             Websocket = None
         }
 
+        member this.Send (e : Example.Shared.Types.ClientSendEvent) =
+            match this.Websocket with
+            | Some ws -> ws.SendToSocket(e.Encode())
+            | None -> ()
+
     type Msg = 
     | Connect
     | SendToSocket of toSend : Types.ClientSendEvent
@@ -159,9 +125,24 @@ module Updates =
             |> Types.ClientSendEvent.PiRegisterEvent
         model, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
 
+    let sendRegisterEventSub (model: Model) =
+        let registerEvent = 
+            Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
+            |> Types.ClientSendEvent.PiRegisterEvent
+            |> Models.Msg.SendToSocket
+        let sub dispatch =
+            Browser.Dom.window.setTimeout((fun _ -> dispatch registerEvent), 3000)
+            |> ignore
+        Cmd.ofSub sub
+
+    let sendRegisterEventFunc (model : Model) () =
+        let registerEvent = 
+            Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
+            |> Types.ClientSendEvent.PiRegisterEvent
+        model.Send(registerEvent)
+
     let init (initialModel : Model) =
         initialModel , Cmd.ofMsg Connect
-        //sendRegisterEvent initialModel
     
     let msgPrinter msg =
         printfn "Message: %s" msg
@@ -170,14 +151,18 @@ module Updates =
         printfn "In update function"
         match msg with
         | Connect ->
-            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter)
-            // printfn "waiting for connect"
-            // Browser.Dom.window.setTimeout ((fun _ -> ws.IsOpen()), 10000) |> ignore
+            let onOpen = sendRegisterEventFunc model
+            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter, onOpen)
+            let model = { model with Websocket = Some ws }
 
-            let registerEvent = 
-                Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
-                |> Types.ClientSendEvent.PiRegisterEvent
-            { model with Websocket = Some ws }, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
+
+            //let st = Browser.Dom.window.setTimeout ((fun _ -> dispatch (sendRegisterEvent model)), 2000)
+            model, Cmd.none
+
+            // let registerEvent = 
+            //     Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
+            //     |> Types.ClientSendEvent.PiRegisterEvent
+            // { model with Websocket = Some ws }, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
         | SendToSocket toSend ->
             printfn "Sending to socket: %A" toSend
             match model.Websocket with
@@ -205,18 +190,13 @@ module View =
         let sdpiWrapper = Class "sdpi-wrapper"
         let sdpiItem = Class "sdpi-item"
         let msgClass = Class "message"
-            //Fable.React.Props.ClassName "spdi-item" :> IHTMLProp // ("class", "spdi-item")
         div [ sdpiWrapper ] [
-            // [   button [ OnClick (fun _ -> dispatch Decrement); spdiClass ] [ str "-" ]
-            //     div [ spdiClass ] [ str (sprintf "%A" model.Count) ]
-            //     button [ OnClick (fun _ -> dispatch Increment); spdiClass ] [ str "+" ]
-            //     div [ spdiClass ] [ str (sprintf "port is %A" model.Port) ]
-                div [ sdpiItem] [
-                    details [ msgClass ] [ 
-                        summary [] [ str (sprintf "Plugin UUID is %s" (model.PropertyInspectorUUID.ToString("N")))]
-                    ]
+            div [ sdpiItem] [
+                details [ msgClass ] [ 
+                    summary [] [ str (sprintf "Plugin UUID is %s" (model.PropertyInspectorUUID.ToString("N")))]
                 ]
             ]
+        ]
 
 open Elmish.React
 
@@ -226,7 +206,8 @@ let startApp (initialModel : Models.Model) =
             Updates.update
             View.view
     |> Program.withConsoleTrace
-    //|> Program.withSubscription externalFuncSub
+    //attempt to register the plugin after 3 seconds
+    |> Program.withSubscription Updates.sendRegisterEventSub
     |> Program.withReactBatched "elmish-app"
     |> Program.runWith initialModel
 
