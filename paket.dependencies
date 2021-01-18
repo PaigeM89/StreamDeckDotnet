@@ -88,7 +88,7 @@ group Analyzers
     source https://www.nuget.org/api/v2
     source https://api.nuget.org/v3/index.json
 
-    nuget BinaryDefense.FSharp.Analyzers.Hashing 0.1.0
+    nuget BinaryDefense.FSharp.Analyzers.Hashing 0.1.1
 
 #stuff for Example.Client
 group Fable

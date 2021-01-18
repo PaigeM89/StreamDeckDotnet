@@ -22,7 +22,7 @@ module Websockets =
 
     //https://github.com/fable-compiler/fable-browser/blob/master/src/WebSocket/Browser.WebSocket.fs
     
-    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit, openHandler: unit -> unit) =
+    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit) = //, openHandler: unit -> unit) =
         let mutable msgQueue : string list = []
         let wsref : WebSocket option ref = ref None
         
@@ -87,7 +87,6 @@ module Websockets =
 
 module Models = 
     type Model = {
-        Count : int
         Port : int
         PropertyInspectorUUID : System.Guid
         RegisterEvent : string
@@ -96,7 +95,6 @@ module Models =
         Websocket : Websockets.Websocket option
     } with
         static member Empty() = {
-            Count = 0
             Port = 0
             PropertyInspectorUUID = System.Guid.Empty
             RegisterEvent = ""
@@ -152,17 +150,10 @@ module Updates =
         match msg with
         | Connect ->
             let onOpen = sendRegisterEventFunc model
-            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter, onOpen)
+            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter) //, onOpen)
             let model = { model with Websocket = Some ws }
 
-
-            //let st = Browser.Dom.window.setTimeout ((fun _ -> dispatch (sendRegisterEvent model)), 2000)
             model, Cmd.none
-
-            // let registerEvent = 
-            //     Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
-            //     |> Types.ClientSendEvent.PiRegisterEvent
-            // { model with Websocket = Some ws }, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
         | SendToSocket toSend ->
             printfn "Sending to socket: %A" toSend
             match model.Websocket with
@@ -184,6 +175,8 @@ module View =
     open Fable.React.Props
     open Fable.React.Helpers
     open Fable.React.Standard
+
+    // https://github.com/fable-compiler/fable-react/blob/master/src/Fable.React.Standard.fs
 
     let view (model: Models.Model) dispatch =
         printfn "drawing updated view from model %A" model
@@ -218,8 +211,15 @@ let connectStreamDeck
         (inInfo: string)
         (inActionInfo : string) =
 
+    printfn 
+        "Args are: inPort: %A\nInPI_UUID: %A\nregister Event: %s\ninfo: %s\n actionInfo: %s"
+        inPort
+        inPropertyInspectorUUID
+        inRegisterEvent
+        inInfo
+        inActionInfo
+
     let model = {
-        Models.Model.Count =  0
         Models.Model.Port = inPort
         Models.Model.PropertyInspectorUUID = inPropertyInspectorUUID
         Models.Model.RegisterEvent = inRegisterEvent
