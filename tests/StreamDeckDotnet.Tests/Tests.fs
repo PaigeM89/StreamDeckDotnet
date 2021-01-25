@@ -4,8 +4,7 @@ open System
 open Expecto
 open StreamDeckDotnet
 
-module Async =
-    let lift a' = async { return a' }
+
 
 module RoutingEngineTests =
     open StreamDeckDotnet.Context

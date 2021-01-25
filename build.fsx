@@ -438,7 +438,7 @@ let dotnetBuild ctx =
         }) sln
 
 
-let fsharpAnalyzers ctx = ignore
+let fsharpAnalyzers ctx = () //ignore
     // 2021-01-18 this is causing build issues locally and on github
     // let argParser = ArgumentParser.Create<FSharpAnalyzers.Arguments>(programName = "fsharp-analyzers")
     // !! srcGlob

@@ -19,6 +19,7 @@ nuget Ply
 nuget Thoth.Json.Net
 nuget Newtonsoft.Json
 nuget FsToolkit.ErrorHandling
+nuget FSharp.Control.WebSockets
 nuget Serilog
 nuget Serilog.Settings.Configuration
 nuget Serilog.Sinks.Console

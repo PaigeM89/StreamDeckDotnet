@@ -39,7 +39,7 @@ module Websockets =
                         printfn "Socket had error!"
                     socket.onopen <- fun e ->
                         printfn "Socket was opened, on open being called! %A" e
-                        openHandler()
+                        //openHandler()
                         printfn "MsgQueue is %A" msgQueue
                         msgQueue |> List.rev |> List.iter socket.send
                     socket.onclose <- fun _ ->

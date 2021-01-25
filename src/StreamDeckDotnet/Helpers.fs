@@ -12,6 +12,20 @@ module internal Task =
         else r.SetResult(projection(self.Result))) |> ignore
     r.Task
 
+  // let failWith (ex : exn) =
+  //   Task.FromException(ex)
+
+  let inline failWith<'a> (ex : exn) =
+    Task<'a>.FromException(ex)
+
+[<RequireQualifiedAccess>]
+module internal Exception =
+  open System.Runtime.ExceptionServices
+  
+  let Reraise ex =
+      (ExceptionDispatchInfo.Capture ex).Throw ()
+      Unchecked.defaultof<_>
+
 [<AutoOpen>]
 module internal Async =
   let lift a' = async { return a' }

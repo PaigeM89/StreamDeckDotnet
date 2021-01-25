@@ -14,7 +14,12 @@ routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=
 
 https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
 
-I _think_ that both the plugin and the property inspector are clients, and the streamdeck app is the server. This has not been clear to me from the beginning.
+look into:
+
+websockets library
+https://github.com/TheAngryByrd/FSharp.Control.WebSockets
+
+
 
 ## mimic
 

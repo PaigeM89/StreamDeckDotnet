@@ -10,6 +10,7 @@ System.Text.Json
 Thoth.Json.Net
 Newtonsoft.Json
 FsToolkit.ErrorHandling
+FSharp.Control.WebSockets
 Serilog
 
 File:FsLibLog.fs
