@@ -1,4 +1,5 @@
 FSharp.Core
+FSharp.Control.WebSockets
 Argu
 
 group Tools
@@ -6,3 +7,4 @@ group Tools
   Fake.IO.FileSystem
   Fake.Core.Target
   Fake.DotNet.Cli
+
