@@ -60,6 +60,18 @@ let launchStreamDeck path =
     | ex ->
         StreamDeckProcessCrashed ex |> Error
 
+let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Events.EventReceived option) = 
+    match sendEvent with
+    | None -> ()
+    | Some eventToSend -> 
+        let msg = eventToSend.Encode Statics.context Statics.device
+        let result = socket.Send msg |> Async.RunSynchronously
+        CLI.renderInfo $"Send message result is %A{result}"
+
+let websocketMessageHandler (socket : Websocket.Socket) (msg : string) =
+    CLI.renderResponse msg
+    //CLI.mainMenuLoop (handler socket)
+
 [<EntryPoint>]
 let main argv =
     printfn "Welcome to the StreamDeck Mimic application! This application attempts to mimic a StreamDeck with better logging."
@@ -67,19 +79,22 @@ let main argv =
     let args = ArgsParsing.parseArgs argv
     renderInfo ($"%A{args}")
 
+    let socket = Websocket.Socket()
+
     renderInfo "Creating & starting web host..."
     let host =
         async {
-            let! webhost = Webhost.buildWebhost args.Port
+            let! webhost = Webhost.buildWebhost  args.Port socket (websocketMessageHandler socket)
             return! Webhost.startWebHost webhost
         } |> Async.RunSynchronously
 
-    
     renderInfo $"Web host started, StreamDeck.Mimic is ready to accept connections on port %i{args.Port}"
     let cmd = exampleProjectArgs args
-    renderInfo $"Run the Example project with this command: %s{cmd}"
-    let input = CLI.renderMainMenu()
-    renderInfo $"User selected %A{input}"
+    renderInfo $"Run the Example project from the repository root with this command:\n%s{cmd}\n"
+    CLI.mainMenuLoop (handler socket)
+    //CLI.mainMenuLoop socket
+        //CLI.renderMainMenu() |> inputToCommand
+    //renderInfo $"User selected %A{input}"
 
     // renderInfo "Launching stream deck application..."
     // let r = launchStreamDeck args.PathToDll

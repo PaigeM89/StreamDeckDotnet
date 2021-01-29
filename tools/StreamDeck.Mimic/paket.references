@@ -1,6 +1,8 @@
 FSharp.Core
 FSharp.Control.WebSockets
 Argu
+Thoth.Json.Net
+FsToolkit.ErrorHandling
 
 group Tools
   Spectre.Console

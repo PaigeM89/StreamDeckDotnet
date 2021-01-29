@@ -5,9 +5,11 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/StreamDeckDotnet/Types.fs" />
     <Compile Include="CLI.fs" />
     <Compile Include="ArgsParsing.fs" />
     <Compile Include="Webhost.fs" />
+    <Compile Include="SendEvents.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

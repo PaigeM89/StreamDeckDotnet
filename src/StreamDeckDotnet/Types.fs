@@ -44,9 +44,20 @@ module Types =
   let decodeEventMetadata (str : string) =
     Decode.fromString EventMetadata.Decoder str
 
+  //Encodes the payload with a wrapper containing metadata
+  let encodeWithWrapper (context: string option) (device : string option) event payload =
+    Encode.object [
+      if context.IsSome then "context", Option.get context |> Encode.string
+      if device.IsSome then "device", Option.get device |> Encode.string
+      "event", Encode.string event
+      "payload", Encode.object payload
+    ]
+
   module Received = 
 
     let buildJObject (s : string) = JObject(s)
+
+    let jo() = JObject()
 
     type Coordinates = {
       Column: int
@@ -58,6 +69,11 @@ module Types =
             Row = get.Required.Field "row" Decode.int
           }
         )
+
+      member this.Encode() = [
+        "column", Encode.int this.Column
+        "row", Encode.int this.Row
+      ]
 
     type KeyPayload = {
       Settings: JObject
@@ -75,6 +91,16 @@ module Types =
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
 
+      member this.Encode context device =
+        let payload = [
+          "settings", Encode.string (this.Settings.ToString())
+          "coordinates", Encode.object (this.Coordinates.Encode())
+          "state", Encode.uint32 this.State
+          "userDesiredState", Encode.uint32 this.UserDesiredState
+          "isInMultiAction", Encode.bool this.IsInMultiAction
+        ]
+        encodeWithWrapper context device "keyDown" payload
+
     type SettingsPayload = {
       Settings : JObject
       Coordinates : Coordinates
@@ -87,17 +113,16 @@ module Types =
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
 
+      member this.Encode context device =
+        let payload = [
+          "settings", Encode.string (this.Settings.ToString())
+          "coordinates", Encode.object (this.Coordinates.Encode())
+          "isInMultiAction", Encode.bool this.IsInMultiAction
+        ]
+        encodeWithWrapper context device "didReceiveSettings" payload
+
   module Sent =
     open Newtonsoft.Json.Linq
-
-    //Encodes the payload with a wrapper containing metadata
-    let encodeWithWrapper (context: string option) (device : string option) event payload =
-      Encode.object [
-        if context.IsSome then "context", Option.get context |> Encode.string
-        if device.IsSome then "device", Option.get device |> Encode.string
-        "event", Encode.string event
-        "payload", Encode.object payload
-      ]
 
     type LogMessagePayload = {
       Message : JValue
@@ -146,6 +171,12 @@ module Events =
       | KeyUp _ -> "KeyUp"
       | DidReceiveSettings _ -> "DidReceiveSettings"
       | SystemWakeUp -> "SystemWakeUp"
+
+    member this.Encode context device =
+      match this with
+      | DidReceiveSettings payload -> 
+        payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
+      | _ -> ""
 
   type EventSent =
   | RegisterPlugin of payload: RegisterPlugin
