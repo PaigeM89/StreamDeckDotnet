@@ -4,7 +4,7 @@ namespace StreamDeckDotnet
 module Core =
   open Microsoft.Extensions.Logging
   open Context
-  open Events
+  open Types
   open Thoth.Json.Net
   open FsToolkit.ErrorHandling
 
@@ -48,7 +48,7 @@ module Core =
       return targetType payload
     }
 
-  let tryBindEvent (errorHandler : PipelineFailure -> EventHandler) (successHandler : EventReceived -> EventHandler) : EventHandler =
+  let tryBindEvent (errorHandler : PipelineFailure -> EventHandler) (successHandler : Received.EventReceived -> EventHandler) : EventHandler =
     fun (next : EventFunc) (ctx: EventContext) -> async {
       let! result = ctx.TryBindEventAsync
       match result with
@@ -67,17 +67,17 @@ module Core =
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
   //these structures are in Giraffe but i don't know what they do
-  let KEY_DOWN : EventHandler = EventMetadata (validateAction EventNames.KeyDown)
-  let SYSTEM_WAKE_UP : EventHandler = EventMetadata (validateAction EventNames.SystemDidWakeUp)
-  let KEY_UP : EventHandler = EventMetadata (validateAction EventNames.KeyDown)
+  let KEY_DOWN : EventHandler = EventMetadata (validateAction Types.EventNames.KeyDown)
+  let SYSTEM_WAKE_UP : EventHandler = EventMetadata (validateAction Types.EventNames.SystemDidWakeUp)
+  let KEY_UP : EventHandler = EventMetadata (validateAction Types.EventNames.KeyDown)
 
   let addLog (msg : string) (ctx : EventContext) =
-    let log = Events.createLogEvent msg
+    let log = createLogEvent msg
     Context.addSendEvent log ctx
 
   let log (msg : string) : EventHandler =
     fun (next : EventFunc) (ctx : EventContext) ->
       addLog msg ctx
-      next ctx
+      |> next
 
   let flow (_ : EventFunc) (ctx: EventContext) = Context.flow ctx

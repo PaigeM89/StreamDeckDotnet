@@ -7,6 +7,7 @@ open StreamDeckDotnet.Logger.Operators
 module ActionRouting = 
   open Core
   open Context
+  open Types
 
   type EventRoute = EventFunc -> EventContext -> EventFuncResult
 
@@ -42,24 +43,24 @@ module ActionRouting =
     fun next ctx -> 
       let validatePayload e =
         match e with
-        | Events.KeyUp payload -> successHandler payload
-        | Events.KeyDown payload -> successHandler payload
+        | Received.KeyUp payload -> successHandler payload
+        | Received.KeyDown payload -> successHandler payload
         | _ -> bindingErrorHandler e next ctx
       tryBindEvent decodingErrorHandler validatePayload next ctx
 
-  let tryBindKeyDownEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Types.Received.KeyPayload -> EventHandler) =
+  let tryBindKeyDownEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.KeyPayload -> EventHandler) =
     fun next (ctx : EventContext) ->
-      let filter (e : Events.EventReceived)  = 
+      let filter (e : Received.EventReceived)  = 
         match e with
-        | Events.EventReceived.KeyDown payload -> successHandler payload
-        | _ -> errorHandler (Context.PipelineFailure.WrongEvent ((e.GetName()), Events.EventNames.KeyDown))
+        | Received.EventReceived.KeyDown payload -> successHandler payload
+        | _ -> errorHandler (Context.PipelineFailure.WrongEvent ((e.GetName()), EventNames.KeyDown))
       tryBindEvent errorHandler filter next ctx
 
-  let tryBindKeyDownEventPipeline (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Types.Received.KeyPayload -> EventHandler) =
+  let tryBindKeyDownEventPipeline (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.KeyPayload -> EventHandler) =
     fun next (ctx : EventContext) ->
-      let filter (e : Events.EventReceived)  = 
+      let filter (e : Received.EventReceived)  = 
         match e with
-        | Events.EventReceived.KeyDown payload -> successHandler payload
+        | Received.EventReceived.KeyDown payload -> successHandler payload
         | _ -> errorHandler Context.PipelineFailure.Placeholder
       tryBindEvent errorHandler filter next ctx
 
@@ -122,11 +123,11 @@ module Engine =
   //   ()
 
   let handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
-    let register = Types.Sent.RegisterPlugin.Create args.RegisterEvent args.PluginUUID
+    let register = Types.Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
     !! "Creating registration event of {event}"
     >>!+ ("event", register)
     |> logger.info
-    let sendEvent = Events.EventSent.RegisterPlugin register
+    let sendEvent = Types.Sent.EventSent.RegisterPlugin register
     sendEvent.Encode None None //context or device not needed for this event.
 
   // handles the raw json message from the web socket
@@ -159,7 +160,7 @@ module Engine =
     | Error e -> return failwithf "%A" e
   }
 
-  let handleMatch (matchFunc: EventContext -> Events.EventReceived -> EventHandler) = 
+  let handleMatch (matchFunc: EventContext -> Types.Received.EventReceived -> EventHandler) = 
     ActionRouting.matcher matchFunc
 
   type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
@@ -175,49 +176,39 @@ module TestCode =
   open Context
   open FsToolkit.ErrorHandling
   open Websockets
-  //open MessageRoutingBuilder
   open ActionRouting
-  open ActionRouting.PayloadRouting
-  
 
-  let myAction (event : Events.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
-    Core.addLog $"in My Action handler, with event {event}" ctx
-    return! Core.flow next ctx
+  let myAction (event : Types.Received.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
+    let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
+    return! Core.flow next ctx'
   }
 
   let keyUpEvent (event : Types.Received.KeyPayload) (next : EventFunc) (ctx: EventContext) = async {
-    Core.addLog $"In key up event handler, with event payload {event}" ctx
-    return! Core.flow next ctx
+    let ctx' = Core.addLog $"In key up event handler, with event payload {event}" ctx
+    return! Core.flow next ctx'
   }
 
   let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : EventFunc) (ctx: EventContext) = async {
-    Core.addLog $"In settings received handler, with event payload {settings}" ctx
-    return! Core.flow next ctx
+    let ctx' = Core.addLog $"In settings received handler, with event payload {settings}" ctx
+    return! Core.flow next ctx'
   }
 
   let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
   let bindingErrorHandler (e) : EventHandler = Core.log($"In binding error handler, got event {e}")
 
-  let settingsT = (Events.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
+  let settingsT = (Types.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
 
   let keyPayloadStateCheck targetState (payload : Types.Received.KeyPayload) =
     payload.State = targetState
 
-  // let keyUpRoutes = choose [
-  //   state (fun s -> s = 0)
-  // ]
-
   let routes =
     let t2 =
-      eventMatch Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
-
-    // let t3 =
-    //   action Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEventPipeline errorHandler >=> Core.log "more logging" >=> keyUpEvent
+      eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
 
     let keydownroute =
-      eventMatch Events.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
+      eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
     let wakeUpRoute =
-      eventMatch Events.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
+      eventMatch Types.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
     
     choose [
       t2
@@ -228,14 +219,14 @@ module TestCode =
   //todo: try this, resolve types.
   let matchFuction (ctx : EventContext) event =
     match event with
-    | Events.EventReceived.KeyDown payload ->
+    | Types.Received.EventReceived.KeyDown payload ->
       () |> Async.lift
-    | Events.EventReceived.DidReceiveSettings payload ->
+    | Types.Received.EventReceived.DidReceiveSettings payload ->
       () |> Async.lift
-    | Events.EventReceived.SystemWakeUp ->
+    | Types.Received.EventReceived.SystemWakeUp ->
       () |> Async.lift
     | _ ->
-      Core.addLog $"Unhandled event type:{event}" ctx
+      Core.addLog $"Unhandled event type:{event}" ctx |> ignore
       () |> Async.lift
 
   let run() =

@@ -9,6 +9,9 @@ module Statics =
 
 module CLI =
   open StreamDeckDotnet
+  open StreamDeckDotnet.Types
+  open StreamDeckDotnet.Types.Received
+
   let renderError (s : string) = AnsiConsole.Markup("[red]{0}[/]\n", s.EscapeMarkup())
   let renderInfo (s : string) = AnsiConsole.Markup("[aqua]{0}[/]\n", s.EscapeMarkup())
   let renderResponse (s : string) = AnsiConsole.Markup("[green]Response from plugin:[/]\n[lime]{0}[/]\n", s.EscapeMarkup())
@@ -42,7 +45,6 @@ module CLI =
 
     
   module SendEvent =
-    open StreamDeckDotnet.Types
     open StreamDeckDotnet.Types.Received
 
     let sendEventList =
@@ -81,7 +83,7 @@ module CLI =
         KeyPayload.State = 0u
         KeyPayload.UserDesiredState = 0u
         KeyPayload.IsInMultiAction = false
-      } |> Events.EventReceived.KeyDown
+      } |> KeyDown
 
     let handleSendEventInput (input : string) =
       let bldr event payload = metadataBuilder Statics.context event payload
@@ -97,7 +99,7 @@ module CLI =
   type Commands =
   | Exit
   | ReturnToMenu
-  | SendEvent of payload : Events.EventReceived option
+  | SendEvent of payload : Types.Received.EventReceived option
 
   let inputToCommand (input : string) =
     match input.ToLowerInvariant() with

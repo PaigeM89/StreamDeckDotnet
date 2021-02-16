@@ -83,15 +83,9 @@ module Websockets =
           payload
         )
 
-      let awaitAsyncReceive () = //(receiveStream : IO.Stream) =
+      let awaitAsyncReceive () =
         !! "calling ts websocket receive message as utf8" |> logger.trace
         ThreadSafeWebSocket.receiveMessageAsUTF8 _tsWebsocket
-        // ThreadSafeWebSocket.receiveMessage
-        //   _tsWebsocket
-        //   BufferSize
-        //   WebSocketMessageType.Text
-        //   receiveStream
-
 
       //splitting this into a separate function allows for better error logging
       let closeSocket = 
@@ -109,13 +103,11 @@ module Websockets =
         }
 
       member this.DisconnectAsync() = async {
-          // try
           if _isOpen() then
             !! "attempting disconnect socket, currently has state {state}"
             >>!+ ("state", _tsWebsocket.State)
             |> logger.debug
             !! "Closing socket" |> logger.info
-            let token = _cancelSource.Token
             do! closeSocket
             !! "Disposing socket" |> logger.debug
             _tsWebsocket.websocket.Dispose()
@@ -125,8 +117,6 @@ module Websockets =
             !! "Websocket is attempting to disconnect, but is not open and is in state {state}"
             >>!+ ("state", _tsWebsocket.State)
             |> logger.warn
-          // finally
-          //   do release |> ignore
         }
 
       member this.SendToSocketAsync(text : string) = async {
@@ -164,20 +154,10 @@ module Websockets =
         async {
           !! "Entering while loop to recieve & send messages" |> logger.trace
           while _isOpen() do
-            // let buf = Array.zeroCreate (BufferSize)
-            // let arrseg = ArraySegment<byte>(buf)
-            //let receiveStream = new IO.MemoryStream()
             !! "Calling await async receive in core loop" |> logger.trace
-            //let! msg = awaitAsyncReceive receiveStream
             let! msg = awaitAsyncReceive()
             !! "After await async receive in core loop" |> logger.trace
             match msg with
-            // | Ok (WebSocket.ReceiveStreamResult.Stream stream) ->
-            //   let buf = Array.zeroCreate (BufferSize)
-            //   let span = Span<byte>(buf)
-            //   let arrseg = ArraySegment<byte>(buf)
-            //   stream.Read(span) |> ignore
-
             | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
               !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
               let! ctx = receiveHandler (msgText)

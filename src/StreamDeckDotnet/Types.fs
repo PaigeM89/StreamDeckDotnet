@@ -53,8 +53,7 @@ module Types =
       "payload", Encode.object payload
     ]
 
-  module Received = 
-
+  module Received =
     let buildJObject (s : string) = JObject(s)
 
     let jo() = JObject()
@@ -121,6 +120,31 @@ module Types =
         ]
         encodeWithWrapper context device "didReceiveSettings" payload
 
+
+    /// Events sent from the stream deck application to the plugin.
+    type EventReceived =
+    /// Recieved when a Stream Deck key is pressed.
+    | KeyDown of payload: KeyPayload
+    /// Received when a Stream Deck key is released after being pressed.
+    | KeyUp of payload: KeyPayload
+    | DidReceiveSettings of payload : SettingsPayload
+    /// Received when the computer wakes up from sleep.
+    /// This event could appear multiple times. There is no guarantee the device is available.
+    | SystemWakeUp // no payload on this event
+      with
+        member this.GetName() =
+          match this with
+          | KeyDown _ -> "KeyDown"
+          | KeyUp _ -> "KeyUp"
+          | DidReceiveSettings _ -> "DidReceiveSettings"
+          | SystemWakeUp -> "SystemWakeUp"
+
+        member this.Encode context device =
+          match this with
+          | DidReceiveSettings payload -> 
+            payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
+          | _ -> ""
+
   module Sent =
     open Newtonsoft.Json.Linq
 
@@ -133,7 +157,7 @@ module Types =
           ]
           encodeWithWrapper context device "logMessage" payload
     
-    type RegisterPlugin = {
+    type RegisterPluginPayload = {
       Event : string
       PluginGuid : Guid
     } with
@@ -148,49 +172,20 @@ module Types =
           PluginGuid = id
         }
 
-module Events =
-  open Newtonsoft.Json.Linq
-  open Types.Received
-  open Types.Sent
+    type EventSent =
+    | RegisterPlugin of payload: RegisterPluginPayload
+    | InRegisterEvent of pluginUUID : Guid
+    | LogMessage of LogMessagePayload
+    with
+      member this.Encode context device =
+        match this with
+        | RegisterPlugin payload -> payload.Encode() |> Thoth.Json.Net.Encode.toString 0
+        | InRegisterEvent id -> Thoth.Json.Net.Encode.toString 0 (JValue(id))
+        | LogMessage payload ->
+          Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
 
-  /// Events sent from the stream deck application to the plugin.
-  type EventReceived =
-  /// Recieved when a Stream Deck key is pressed.
-  | KeyDown of payload: KeyPayload
-  /// Received when a Stream Deck key is released after being pressed.
-  | KeyUp of payload: KeyPayload
-  | DidReceiveSettings of payload : SettingsPayload
-  /// Received when the computer wakes up from sleep.
-  /// This event could appear multiple times. There is no guarantee the device is available.
-  | SystemWakeUp // no payload on this event
-  
-  with
-    member this.GetName() =
-      match this with
-      | KeyDown _ -> "KeyDown"
-      | KeyUp _ -> "KeyUp"
-      | DidReceiveSettings _ -> "DidReceiveSettings"
-      | SystemWakeUp -> "SystemWakeUp"
 
-    member this.Encode context device =
-      match this with
-      | DidReceiveSettings payload -> 
-        payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
-      | _ -> ""
-
-  type EventSent =
-  | RegisterPlugin of payload: RegisterPlugin
-  | InRegisterEvent of pluginUUID : Guid
-  | LogMessage of LogMessagePayload
-  with
-    member this.Encode context device =
-      match this with
-      | RegisterPlugin payload -> payload.Encode() |> Thoth.Json.Net.Encode.toString 0
-      | InRegisterEvent id -> Thoth.Json.Net.Encode.toString 0 (JValue(id))
-      | LogMessage payload ->
-        Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
-
-  let (|InvariatnEqual|_|) (str: string) arg =
+  let (|InvariantEqual|_|) (str: string) arg =
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some() else None
 
   module EventNames =
@@ -204,5 +199,6 @@ module Events =
     let SystemDidWakeUp = "systemdidwakeup"
 
   let createLogEvent (msg : string) =
-    let payload = { Types.Sent.LogMessagePayload.Message = JValue(msg) }
-    LogMessage payload
+    let payload = { Sent.LogMessagePayload.Message = JValue(msg) }
+    Sent.LogMessage payload
+

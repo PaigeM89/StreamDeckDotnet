@@ -12,9 +12,6 @@ module internal Task =
         else r.SetResult(projection(self.Result))) |> ignore
     r.Task
 
-  // let failWith (ex : exn) =
-  //   Task.FromException(ex)
-
   let inline failWith<'a> (ex : exn) =
     Task<'a>.FromException(ex)
 

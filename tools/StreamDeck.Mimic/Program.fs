@@ -60,7 +60,7 @@ let launchStreamDeck path =
     | ex ->
         StreamDeckProcessCrashed ex |> Error
 
-let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Events.EventReceived option) = 
+let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Types.Received.EventReceived option) = 
     match sendEvent with
     | None -> ()
     | Some eventToSend -> 
