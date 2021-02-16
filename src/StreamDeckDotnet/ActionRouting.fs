@@ -36,7 +36,7 @@ module ActionRouting =
   let eventMatch (eventName : string) : EventHandler =
     fun (next : EventFunc) (ctx : Context.EventContext) ->
       let validate = Core.validateAction eventName
-      Core.EventMetadata validate next ctx
+      Core.validateEvent validate next ctx
 
 
   let tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler =
