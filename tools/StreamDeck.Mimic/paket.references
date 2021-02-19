@@ -4,6 +4,8 @@ Argu
 Thoth.Json.Net
 FsToolkit.ErrorHandling
 
+File:FsLibLog.fs
+
 group Tools
   Spectre.Console
   Fake.IO.FileSystem

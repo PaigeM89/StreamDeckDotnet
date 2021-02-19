@@ -883,6 +883,12 @@ Target.create "ReleaseDocs" releaseDocs
 
 "DotnetBuild" ==> "BuildExample"
 
+"Clean"
+    ==> "DotnetRestore"
+    ==> "DotnetBuild"
+    ==> "BuildExample"
+    ==> "RunMimic"
+
 "BuildExample"
     ==> "PublishExample"
     ==> "PackageExample"

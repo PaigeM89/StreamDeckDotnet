@@ -12,10 +12,10 @@ let log =
     .Enrich.FromLogContext()
     .Enrich.With(new ThreadIdEnricher())
     .WriteTo.File("log.txt",
-      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
+      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
     )
     .WriteTo.Console(
-      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
+      outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
     )
     .CreateLogger()
 
@@ -28,7 +28,7 @@ let logger = LogProvider.getLoggerByName("Example.Program")
 let main argv =
   Log.setMessage("Starting example project") |> logger.trace
   for arg in argv do
-    Log.setMessage($"Arg is {arg}") |> logger.trace
+    Log.setMessage($"Arg is '{arg}'") |> logger.trace
   let routes = ExampleProject.Routing.routes
 
   Log.setMessage "Parsing args..." |> logger.trace

@@ -5,6 +5,11 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\paket-files\TheAngryByrd\FsLibLog\src\FsLibLog\FsLibLog.fs">
+      <Paket>True</Paket>
+      <Link>paket-files/FsLibLog.fs</Link>
+    </Compile>
+    <Compile Include="../../src/StreamDeckDotnet/Helpers.fs" />
     <Compile Include="../../src/StreamDeckDotnet/Types.fs" />
     <Compile Include="CLI.fs" />
     <Compile Include="ArgsParsing.fs" />

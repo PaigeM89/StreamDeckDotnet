@@ -67,6 +67,7 @@ module Websockets =
           |> logger.info
           let ws = new ClientWebSocket()
           do! ws.ConnectAsync(Uri(uri), _cancelSource.Token)
+          !! "Creating thread safe web socket from web socket" |> logger.trace
           _tsWebsocket <- ThreadSafeWebSocket.createFromWebSocket ws
           !! "Finished connecting web socket" |> logger.trace
         else
@@ -93,7 +94,9 @@ module Websockets =
         async {
           let! result = ThreadSafeWebSocket.close _tsWebsocket WebSocketCloseStatus.NormalClosure "Closing web socket"
           match result with
-          | Ok () -> ()
+          | Ok () ->
+            !! "Socket closed successfully" |> logger.trace
+            ()
           | Error e ->
             !! "Error closing thread safe web socket: {err}"
             >>!+ ("err", e)
@@ -154,22 +157,29 @@ module Websockets =
         async {
           !! "Entering while loop to recieve & send messages" |> logger.trace
           while _isOpen() do
-            !! "Calling await async receive in core loop" |> logger.trace
-            let! msg = awaitAsyncReceive()
-            !! "After await async receive in core loop" |> logger.trace
-            match msg with
-            | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
-              !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
-              let! ctx = receiveHandler (msgText)
-              do! ctx |> eventsEncoded |> this.SendAllToSocketAsync
-            | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->
-              !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
-              >>!+ ("status", status)
-              >>!- ("desc", description)
-              |> logger.error
-            | Error e ->
-              !! "Received error {err} when awaiting async recieve for web socket"
-              >>!+ ("err", e)
+            try
+              !! "Calling await async receive in core loop" |> logger.trace
+              let! msg = awaitAsyncReceive()
+              !! "After await async receive in core loop" |> logger.trace
+              match msg with
+              | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
+                !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
+                let! ctx = receiveHandler (msgText)
+                do! ctx |> eventsEncoded |> this.SendAllToSocketAsync
+              | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->
+                !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
+                >>!+ ("status", status)
+                >>!- ("desc", description)
+                |> logger.error
+              | Error e ->
+                !! "Received error {err} when awaiting async recieve for web socket"
+                >>!+ ("err", e)
+                |> logger.error
+            with
+            | ex ->
+              !! "Exiting receive loop due to error {msg}:\n{st}"
+              >>!+ ("msg", ex.Message)
+              >>!+ ("st", ex.StackTrace)
               |> logger.error
 
           !! "Exiting receive loop due to socket closure" |> logger.trace
@@ -177,6 +187,7 @@ module Websockets =
 
       member this.RunAsync() = 
         let fin = async {
+            !! "Finishing async work, disposing socket" |> logger.trace
             do! this.DisconnectAsync()
           }
         let work = async {
@@ -186,11 +197,11 @@ module Websockets =
               !! "Websocket is not open after starting" |> logger.trace
               ()
             else
-              !! "Web socket successfully connected in state {state}, sending response" 
+              !! "Web socket successfully connected in state {state}, sending registration response." 
               >>!+ ("state", _tsWebsocket.State)
               |> logger.trace
               let response = registrationHandler()
-              !! "Response being sent to web socket is \"{response}\""
+              !! "Response being sent to web socket is:\n  \'{response}\'"
               >>!- ("response", response)
               |> logger.info
               do! this.SendToSocketAsync(response)

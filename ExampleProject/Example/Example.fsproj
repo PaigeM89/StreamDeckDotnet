@@ -9,6 +9,7 @@
       <Paket>True</Paket>
       <Link>paket-files/FsLibLog.fs</Link>
     </Compile>
+    <Compile Include="../../src/StreamDeckDotnet/Helpers.fs" />
     <Compile Include="LogEnricher.fs" />
     <Compile Include="../shared/Messages.fs" />
     <Compile Include="Routing.fs" />

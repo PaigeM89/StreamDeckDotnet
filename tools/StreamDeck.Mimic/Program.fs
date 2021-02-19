@@ -25,6 +25,23 @@ let exampleProjectArgs (args: Args) =
         "'" + args.Info + "'"
     ] |> String.concat " "
 
+let exampleProjectWatch (args : Args) =
+    [
+        "dotnet"
+        "watch"
+        "run"
+        "--"
+        "--port"
+        (string args.Port)
+        "--pluginuuid"
+        "'" + (args.PluginUUID.ToString("N")) + "'"
+        "--registerevent"
+        "'" + args.RegisterEvent + "'"
+        "--info"
+        //dotnet watch wants a space here if the arg is empty, but the runtime dll doesn't, and i think that's cool.
+        if String.isNotNullOrEmpty args.Info then "'" + args.Info + "'" else "' '"
+    ] |> String.concat " "
+
 let launchStreamDeck path =
     let buildExampleProject() =
         DotNet.build(fun c ->
@@ -65,12 +82,12 @@ let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Types.Rece
     | None -> ()
     | Some eventToSend -> 
         let msg = eventToSend.Encode Statics.context Statics.device
+        CLI.renderInfo $"Message to send to web socket is:\n  %s{msg}"
         let result = socket.Send msg |> Async.RunSynchronously
         CLI.renderInfo $"Send message result is %A{result}"
 
 let websocketMessageHandler (socket : Websocket.Socket) (msg : string) =
-    CLI.renderResponse msg
-    //CLI.mainMenuLoop (handler socket)
+    CLI.renderPluginMessage msg
 
 [<EntryPoint>]
 let main argv =
@@ -91,7 +108,14 @@ let main argv =
     renderInfo $"Web host started, StreamDeck.Mimic is ready to accept connections on port %i{args.Port}"
     let cmd = exampleProjectArgs args
     renderInfo $"Run the Example project from the repository root with this command:\n%s{cmd}\n"
-    CLI.mainMenuLoop (handler socket)
+    let watchcmd = exampleProjectWatch args
+    renderInfo $"Alternatively, navigate to ./ExampleProject/Example folder and run dotnet watch:\n%s{watchcmd}\n"
+    try
+        CLI.mainMenuLoop (handler socket)
+    with
+    | ex ->
+        renderError $"Error running main menu loop:\n  %s{ex.Message}\n{ex.StackTrace}"
+    
     //CLI.mainMenuLoop socket
         //CLI.renderMainMenu() |> inputToCommand
     //renderInfo $"User selected %A{input}"

@@ -12,9 +12,12 @@ module CLI =
   open StreamDeckDotnet.Types
   open StreamDeckDotnet.Types.Received
 
-  let renderError (s : string) = AnsiConsole.Markup("[red]{0}[/]\n", s.EscapeMarkup())
-  let renderInfo (s : string) = AnsiConsole.Markup("[aqua]{0}[/]\n", s.EscapeMarkup())
-  let renderResponse (s : string) = AnsiConsole.Markup("[green]Response from plugin:[/]\n[lime]{0}[/]\n", s.EscapeMarkup())
+  let now() = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff")
+
+  let renderError (s : string) = AnsiConsole.Markup("[red][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
+  let renderInfo (s : string) = AnsiConsole.Markup("[aqua][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
+  let renderDebug (s : string) = AnsiConsole.Markup("[dodgerblue2][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
+  let renderPluginMessage (s : string) = AnsiConsole.Markup("[green][[{0}]]   Message from plugin:[/]\n[lime]{1}[/]\n", now(), s.EscapeMarkup())
 
   let menu = 
     [
@@ -104,7 +107,9 @@ module CLI =
   let inputToCommand (input : string) =
     match input.ToLowerInvariant() with
     | "exit" -> Exit
-    | "check for message" -> ReturnToMenu
+    | "check for message" ->
+      renderInfo "Checking if web socket message has been received..."
+      ReturnToMenu
     | "send event" ->
       SendEvent.pickAndBuildSendEvent() |> SendEvent
     | _ ->

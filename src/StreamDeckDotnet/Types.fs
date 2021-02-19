@@ -7,6 +7,11 @@ module Types =
   open Newtonsoft.Json.Linq
   open Thoth.Json.Net
   open FsToolkit.ErrorHandling
+  open StreamDeckDotnet.Logging
+  open StreamDeckDotnet.Logger
+  open StreamDeckDotnet.Logger.Operators
+
+  let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Types")
 
   let tryDecodePayload decoder targetType payload =
     result {
@@ -50,7 +55,10 @@ module Types =
       if context.IsSome then "context", Option.get context |> Encode.string
       if device.IsSome then "device", Option.get device |> Encode.string
       "event", Encode.string event
-      "payload", Encode.object payload
+      // encode the payload as an object, purge the \n that gets added when tostring()'d,
+      // and encode again to generate a string containing a json object.
+      // e.g., "{ \"property1\" : \"value\", \"propety2\": 0 }"
+      "payload", ((Encode.object payload).ToString().Replace("\n", "").Replace(" ", "")) |> Encode.string
     ]
 
   module Received =
@@ -74,8 +82,18 @@ module Types =
         "row", Encode.int this.Row
       ]
 
+    let toJToken (s : string) =
+      !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
+      let token = JToken.Parse(s)
+      !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
+      token
+      // !! "In toJObject func, turning {s} into a jobject" >>!- ("s", s) |> logger.trace
+      // let jobj = JObject s
+      // !! "Jobject created is {jobj}" >>!+ ("jobj", jobj) |> logger.trace
+      // jobj
+
     type KeyPayload = {
-      Settings: JObject
+      Settings: JToken
       Coordinates: Coordinates
       State: uint
       UserDesiredState: uint
@@ -83,7 +101,7 @@ module Types =
     } with
       static member Decoder : Decoder<KeyPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.string |> JObject
+          Settings = get.Required.Field "settings" Decode.string |> toJToken
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           State = get.Required.Field "state" Decode.uint32
           UserDesiredState = get.Required.Field "userDesiredState" Decode.uint32
@@ -123,10 +141,11 @@ module Types =
 
     /// Events sent from the stream deck application to the plugin.
     type EventReceived =
-    /// Recieved when a Stream Deck key is pressed.
+    /// Received when a Stream Deck key is pressed.
     | KeyDown of payload: KeyPayload
     /// Received when a Stream Deck key is released after being pressed.
     | KeyUp of payload: KeyPayload
+    /// Received after calling `getSettings` to get the persistent data stored for this action.
     | DidReceiveSettings of payload : SettingsPayload
     /// Received when the computer wakes up from sleep.
     /// This event could appear multiple times. There is no guarantee the device is available.
@@ -142,6 +161,8 @@ module Types =
         member this.Encode context device =
           match this with
           | DidReceiveSettings payload -> 
+            payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
+          | KeyDown payload ->
             payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
           | _ -> ""
 

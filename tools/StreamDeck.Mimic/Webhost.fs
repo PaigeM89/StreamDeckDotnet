@@ -14,6 +14,7 @@ module Websocket =
     let mutable threadSafeWebSocket : ThreadSafeWebSocket option = None
 
     member this.Create(socket : WebSocket) =
+      CLI.renderInfo "Creating thread safe web socket from socket"
       threadSafeWebSocket <- ThreadSafeWebSocket.createFromWebSocket socket |> Some
 
     member this.Send (msg : string) = async {
@@ -48,19 +49,27 @@ module Websocket =
   let handleWebSocketRequest (socket : Socket) (handler) (ctx : HttpContext) (next : unit -> Async<unit>) = async {
     if ctx.WebSockets.IsWebSocketRequest then
       if not (socket.Initialized()) then
+        CLI.renderInfo "Socket is not yet initialized, initializing..."
         let! ws = ctx.WebSockets.AcceptWebSocketAsync() |> Async.AwaitTask
         socket.Create(ws)
-      
+      else
+        CLI.renderDebug "Received request, socket is still initialized"
+        if socket.IsOpen() |> not then
+          CLI.renderInfo "Socket is initialized but closed, recreating..."
+          let! ws = ctx.WebSockets.AcceptWebSocketAsync() |> Async.AwaitTask
+          socket.Create(ws)
+
       while socket.IsOpen() do
         try
+          CLI.renderInfo "Socket is open, waiting for message..."
           let! socketResult = socket.ReceiveAsUTF8()
           match socketResult with
           | SocketOk (Ok (WebSocket.ReceiveUTF8Result.String msg)) ->
-            // CLI.renderResponse msg
+            CLI.renderPluginMessage msg
             handler msg
           | SocketOk (Ok (WebSocket.ReceiveUTF8Result.Closed (status, reason))) ->
             CLI.renderError ($"Socket Closed %A{status} - %s{reason}")
-          | SocketOk (Error ex) -> 
+          | SocketOk (Error ex) ->
             CLI.renderError $"Receiving threw an exception: %A{ex.SourceException}"
           | NotInitialized ->
             CLI.renderError "Attempting to receive messages through uninitialized socket"
@@ -68,6 +77,7 @@ module Websocket =
         | e -> 
           CLI.renderError ($"Error in catch block:\n  %A{e}")
     else
+      CLI.renderInfo "Received request that was not a web socket request"
       do! next()
   }
 
@@ -137,7 +147,7 @@ module Webhost =
           .UseConfiguration(config)
           .UseKestrel()
           .Configure(fun app -> configureWebSockets socket app)
-          .UseUrls($"http://*:%i{port}")
+          .UseUrls( $"http://*:%i{port}" )
           .Build()
     }
 

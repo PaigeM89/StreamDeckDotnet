@@ -133,7 +133,7 @@ module Engine =
   // handles the raw json message from the web socket
   let socketMsgHandlerR (msg : string) (routes: Core.EventHandler) = asyncResult {
     //first decode into an EventMetadata
-    !! "Decoding event metadata from msg {msg}"
+    !! "Decoding event metadata from msg '{msg}'"
     >>!- ("msg", msg)
     |> logger.info
     let! eventMetadata = Types.decodeEventMetadata msg
@@ -149,8 +149,12 @@ module Engine =
     !! "Beginning Event Handling" |> logger.trace
 
     match! routes initHandler ctx with
-    | Some ctx -> return ctx
-    | None -> return ctx
+    | Some ctx ->
+      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventReceived) |> logger.trace
+      return ctx
+    | None ->
+      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventReceived) |> logger.warn
+      return ctx
   }
 
   let socketMsgHandler (routes: Core.EventHandler)  (msg : string) = async {
