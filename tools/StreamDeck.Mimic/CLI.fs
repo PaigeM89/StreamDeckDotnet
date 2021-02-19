@@ -17,7 +17,7 @@ module CLI =
   let renderError (s : string) = AnsiConsole.Markup("[red][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
   let renderInfo (s : string) = AnsiConsole.Markup("[aqua][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
   let renderDebug (s : string) = AnsiConsole.Markup("[dodgerblue2][[{0}]]  {1}[/]\n", now(), s.EscapeMarkup())
-  let renderPluginMessage (s : string) = AnsiConsole.Markup("[green][[{0}]]   Message from plugin:[/]\n[lime]{1}[/]\n", now(), s.EscapeMarkup())
+  let renderPluginMessage (s : string) = AnsiConsole.Markup("[green][[{0}]]  Message from plugin:[/]\n[lime]{1}[/]\n", now(), s.EscapeMarkup())
 
   let menu = 
     [
@@ -81,7 +81,7 @@ module CLI =
 
     let buildKeyDownEvent() =
       {
-        KeyPayload.Settings = jo()
+        KeyPayload.Settings = toJToken "{}"
         KeyPayload.Coordinates = baseCoords
         KeyPayload.State = 0u
         KeyPayload.UserDesiredState = 0u

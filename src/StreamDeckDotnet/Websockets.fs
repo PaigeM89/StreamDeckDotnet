@@ -78,7 +78,7 @@ module Websockets =
         ctx.GetEventsToSend()
         |> List.map (fun payloads -> 
           let payload = payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
-          !! "Created event sent paylod of {payload}"
+          !! "Created event sent payload of {payload}"
           >>!- ("payload", payload)
           |> logger.debug
           payload

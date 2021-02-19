@@ -58,13 +58,17 @@ module Types =
       // encode the payload as an object, purge the \n that gets added when tostring()'d,
       // and encode again to generate a string containing a json object.
       // e.g., "{ \"property1\" : \"value\", \"propety2\": 0 }"
-      "payload", ((Encode.object payload).ToString().Replace("\n", "").Replace(" ", "")) |> Encode.string
+      "payload", ((Encode.object payload).ToString().Replace("\n", "")) |> Encode.string
     ]
 
+  /// Events received from the stream deck.
   module Received =
-    let buildJObject (s : string) = JObject(s)
 
-    let jo() = JObject()
+    let toJToken (s : string) =
+      !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
+      let token = JToken.Parse(s)
+      !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
+      token
 
     type Coordinates = {
       Column: int
@@ -81,16 +85,6 @@ module Types =
         "column", Encode.int this.Column
         "row", Encode.int this.Row
       ]
-
-    let toJToken (s : string) =
-      !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
-      let token = JToken.Parse(s)
-      !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
-      token
-      // !! "In toJObject func, turning {s} into a jobject" >>!- ("s", s) |> logger.trace
-      // let jobj = JObject s
-      // !! "Jobject created is {jobj}" >>!+ ("jobj", jobj) |> logger.trace
-      // jobj
 
     type KeyPayload = {
       Settings: JToken
@@ -119,7 +113,7 @@ module Types =
         encodeWithWrapper context device "keyDown" payload
 
     type SettingsPayload = {
-      Settings : JObject
+      Settings : JToken
       Coordinates : Coordinates
       IsInMultiAction : bool
     } with
@@ -166,6 +160,7 @@ module Types =
             payload.Encode context device |> Thoth.Json.Net.Encode.toString 0
           | _ -> ""
 
+  /// Events sent to the stream deck.
   module Sent =
     open Newtonsoft.Json.Linq
 
