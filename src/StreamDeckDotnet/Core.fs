@@ -1,6 +1,6 @@
 namespace StreamDeckDotnet
 
-
+[<AutoOpen>]
 module Core =
   open Microsoft.Extensions.Logging
   open Context
@@ -60,12 +60,6 @@ module Core =
       let funcs = handlers |> List.map (fun h -> h next)
       fun (ctx : Context.EventContext) -> chooseEventFunc funcs ctx
 
-  let tryDecode decoder targetType payload =
-    result {
-      let! payload = Decode.fromString decoder payload
-      return targetType payload
-    }
-
   /// Attempts to bind the payload in an <see cref="EventContext" /> to the <see cref="Received.EventReceived" /> type given,
   /// and then process that event to return a <see cref="EventHandler" />. If the event fails to bind, then the
   /// `errorHandler` will process the error and return the <see cref="EventHandler" />.
@@ -104,10 +98,12 @@ module Core =
     let log = createLogEvent msg
     Context.addSendEvent log ctx
 
+  /// Adds the passed message to the Logs in the context and terminates the event processing pipeline with
+  /// that context.
   let log (msg : string) : EventHandler =
     fun (next : EventFunc) (ctx : EventContext) ->
       addLog msg ctx
       |> next
 
   /// Flow the event handler to the next function, ignoring the passed function
-  let flow (_ : EventFunc) (ctx: EventContext) = Context.flow ctx
+  let flow (_ : EventFunc) (ctx: EventContext) = Context.lift ctx

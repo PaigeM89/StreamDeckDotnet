@@ -1,11 +1,7 @@
 namespace ExampleProject
 
 open StreamDeckDotnet
-open StreamDeckDotnet.Core
-open StreamDeckDotnet.Context
-open StreamDeckDotnet.Types
 open StreamDeckDotnet.Types.Received
-open StreamDeckDotnet.ActionRouting
 
 open StreamDeckDotnet.Logging
 open StreamDeckDotnet.Logger

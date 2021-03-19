@@ -4,17 +4,12 @@ open System
 open Expecto
 open StreamDeckDotnet
 
-
-
-module RoutingEngineTests =
-    open StreamDeckDotnet.Context
-    open StreamDeckDotnet.Core
-    open StreamDeckDotnet.Engine
+module TestHelpers =
     open StreamDeckDotnet.Types
     open StreamDeckDotnet.Types.Sent
     open StreamDeckDotnet.Types.Received
-    open StreamDeckDotnet.ActionRouting
-    
+
+
     module EventMetadataModule =
         let empty() = {
             Action = None
@@ -38,15 +33,26 @@ module RoutingEngineTests =
     let next = fun (ctx : EventContext) ->  Some ctx |> Async.lift
 
     let runTest route next ctx = 
-        evaluateStep route next ctx |> Async.RunSynchronously
+        //evaluateStep route next ctx |> Async.RunSynchronously
+        async {
+            match! next ctx with
+            | Some ctx -> return! route next ctx
+            | None -> return! skipPipeline
+        } |> Async.RunSynchronously
 
     let printContextLogEvents (ctx: EventContext) =
-        ctx.GetEventsToSendFromQueue()
+        ctx.GetEventsToSend()
         |> List.map (fun x -> 
             match x with
             | EventSent.LogMessage { Message = payload } -> payload.ToString()
             | _ -> ""
         )
+
+module RoutingEngineTests =
+    open StreamDeckDotnet.Core
+    open StreamDeckDotnet.Types
+    open StreamDeckDotnet.ActionRouting
+    open TestHelpers
 
     [<Tests>]
     let tests =
@@ -131,3 +137,33 @@ module RoutingEngineTests =
                     Expect.equal actual expected "Should have visited all nodes with logging."
                 | None -> failwith "Did not find context when it should have"
         ]
+
+/// Tests for adding/removing events to send from the context
+module ContextSendEventTests =
+    open TestHelpers
+    open StreamDeckDotnet.Core
+    open StreamDeckDotnet.ActionRouting
+
+    let action = "action"
+
+    [<Tests>]
+    let tests = testList "Context Events To Send" [
+        testCase "Adding no events returns no events" <| fun _ ->
+            let ctx = withEvent action
+            let route = eventMatch action >=> Core.flow
+            let output = runTest route next ctx
+            match output with
+            | Some ctx ->
+                let outputEvents = ctx.GetEventsToSend()
+                Expect.equal outputEvents [] "Should not have generated any events to send"
+            | None -> failwith "Did not find context when it should have"
+        testCase "Adding 2 events returns those events in the insert order" <| fun _ ->
+            let ctx = withEvent action
+            let route = eventMatch action >=> Core.log "node1"  >=> Core.log "node2"
+            let output = runTest route next ctx
+            match output with
+            | Some ctx ->
+                let actual = printContextLogEvents ctx
+                Expect.equal actual [ "node1" ; "node 2" ] "Should not have generated any events to send"
+            | None -> failwith "Did not find context when it should have"
+    ]

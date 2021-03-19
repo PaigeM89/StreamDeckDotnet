@@ -27,7 +27,7 @@ module Websockets =
     abstract member SendAsync : string -> Async<unit>
     abstract member ReceiveHandler : string -> Async<unit>
 
-  let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Websockets")
+  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Websockets")
 
   let BufferSize = 1024 * 1024
 

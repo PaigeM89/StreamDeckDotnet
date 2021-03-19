@@ -1,11 +1,11 @@
 namespace StreamDeckDotnet
 
+[<AutoOpen>]
 module Context =
   open Types
   open Types.Sent
   open Types.Received
   open FsToolkit.ErrorHandling
-  open Thoth.Json.Net
   open System.Collections.Concurrent
 
   /// A failure in the event pipeline to handle an event.
@@ -65,11 +65,10 @@ module Context =
     let mutable _eventReceived : EventReceived option = None
     let mutable _eventsToSend : EventSent list option = None
     let _sendEventQueue : ConcurrentQueue<EventSent > = new ConcurrentQueue<EventSent>()
-    let mutable _eventType : System.Type option = None
-    let mutable _eventTypeValidation: (EventReceived -> bool )option = None
 
     /// The `EventMetadata` that was sent from StreamDeck.
     member this.EventMetadata = eventMetadata
+
     /// The more specific `EventReceived` that was sent from StreamDeck.
     /// This is only populated when the event handler pipeline attempts to parse the event metadata event 
     /// type and payload.
@@ -91,17 +90,7 @@ module Context =
       return! decoder eventMetadata.Payload
     }
 
-    /// NOT USED (YET?)
-    member this.ValidateEventType e = 
-      if _eventTypeValidation.IsSome then
-        (Option.get _eventTypeValidation) e
-      else false
-
-    /// NOT USED (YET?) - event type setting was an experiment to see if we can 
-    /// set expected decoded event types to make pipeline decoding more type-safe.
-    member this.SetEventType(t : System.Type) = _eventType <- Some t
-
-    /// Add the given `EventSent` to the event list to send back to StreamDeck.
+    /// Add the given `EventSent` to the event queue to send back to StreamDeck.
     member this.AddSendEvent e =
       _sendEventQueue.Enqueue(e)
       match _eventsToSend with
@@ -111,13 +100,13 @@ module Context =
         _eventsToSend <- Some (e :: es)
 
     /// Returns a list of the events that will be sent to StreamDeck.
-    member this.GetEventsToSend() = 
+    member this.GetEventsToSendFromList() = 
       match _eventsToSend with
       | Some x -> x
       | None -> []
 
-    /// TODO: remove this if not needed
-    member this.GetEventsToSendFromQueue() =
+    /// Returns a list of the events that will be sent to StreamDeck, in the order they were added.
+    member this.GetEventsToSend() =
       _sendEventQueue.ToArray() |> List.ofArray
 
   /// Adds the given `EventSent` to the `EventContext`
@@ -125,9 +114,5 @@ module Context =
     ctx.AddSendEvent e
     ctx
 
-  /// Flow the event handler pipeline to the next step.
-  let flow (ctx : EventContext) = Some ctx |> Async.lift
-
-  /// Todo: remove this if not needed.
-  let setEventType t (ctx : EventContext) =
-    ctx.SetEventType t
+  /// Lift an instance of an `EventContext` to an async result.
+  let lift (ctx : EventContext) = Some ctx |> Async.lift

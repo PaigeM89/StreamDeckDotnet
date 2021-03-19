@@ -38,7 +38,7 @@ module CLI =
       bldr.PageSize <- size
       bldr
 
-    let withChoices menu (bldr : Prompt) = 
+    let withChoices menu (bldr : Prompt) =
       bldr.AddChoices(menu)
 
   let renderMainMenu() =

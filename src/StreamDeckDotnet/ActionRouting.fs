@@ -4,6 +4,7 @@ open StreamDeckDotnet.Logging
 open StreamDeckDotnet.Logger
 open StreamDeckDotnet.Logger.Operators
 
+[<AutoOpen>]
 module ActionRouting = 
   open Core
   open Context
@@ -64,34 +65,15 @@ module ActionRouting =
         | _ -> errorHandler Context.PipelineFailure.Placeholder
       tryBindEvent errorHandler filter next ctx
 
-module Engine =
-  //open MessageRoutingBuilder
+
+module internal Engine =
   open FsToolkit.ErrorHandling
   open Context
   open Core
 
-  let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Engine")
-
-  // type ActionDelegate = delegate of EventContext -> Async<unit>
-
-  // type ActionMiddleware(next : ActionDelegate, handler: EventHandler) =
-  //   let func = handler earlyReturn
-
-  //   member this.Invoke (ctx : EventContext) =
-  //     async {
-  //       let! result = func ctx
-  //       if result.IsNone then return! next.Invoke ctx
-  //     }
+  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Engine")
 
   type RequestHandler = EventFunc -> EventContext -> EventFuncResult
-
-  // let mapActions (routes : ActionRoute list) =
-  //   routes
-  //   |> List.iter(fun r ->
-  //     match r with
-  //     | SimpleRoute (r, n, a) -> MessageRoutingBuilder.mapSingleAction (r, n, a)
-  //     | MultiRoutes (routes) -> mapMultiAction routes
-  //   )
 
   let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
     async {
@@ -99,28 +81,6 @@ module Engine =
       | Some ctx -> return! handler next ctx
       | None -> return! skipPipeline
     }
-  
-  let inspectroute handler next ctx = 
-    let eval = next ctx |> Async.RunSynchronously
-    match eval with
-    | Some ctx ->
-      handler next ctx
-    | None -> skipPipeline
-
-
-  // let buildActionRoutes (rootHandler : RequestHandler) (ctx : ActionContext) =
-  //   let func : EventFunc = rootHandler earlyReturn
-  //   let t = 
-  //     async {
-  //       let! result = func ctx
-  //       if result.IsNone then return! next.Invoke(ctx)
-  //     }
-  //   //let buildActionRoute (func: EventFunc, ctx : ActionContext, funcResult : EventFuncResult) =
-      
-  //   ()
-
-  // let matchActionContextToHandler (ctx : Context.ActionContext) (routes: ActionRoute list) = 
-  //   ()
 
   let handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
     let register = Types.Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
@@ -157,15 +117,16 @@ module Engine =
       return ctx
   }
 
-  let socketMsgHandler (routes: Core.EventHandler)  (msg : string) = async {
+  let socketMsgHandler (routes: Core.EventHandler) (msg : string) = async {
     let! r = socketMsgHandlerR msg routes
     match r with
     | Ok x -> return x
     | Error e -> return failwithf "%A" e
   }
 
-  let handleMatch (matchFunc: EventContext -> Types.Received.EventReceived -> EventHandler) = 
-    ActionRouting.matcher matchFunc
+[<AutoOpen>]
+module Client =
+  open Engine
 
   type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
     let msgHandler = socketMsgHandler handler
@@ -175,72 +136,72 @@ module Engine =
 
     member this.Run() = _socket.Run()
 
-module TestCode =
-  open Core
-  open Context
-  open FsToolkit.ErrorHandling
-  open Websockets
-  open ActionRouting
+// module TestCode =
+//   open Core
+//   open Context
+//   open FsToolkit.ErrorHandling
+//   open Websockets
+//   open ActionRouting
 
-  let myAction (event : Types.Received.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
-    let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
-    return! Core.flow next ctx'
-  }
+//   let myAction (event : Types.Received.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
+//     let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
+//     return! Core.flow next ctx'
+//   }
 
-  let keyUpEvent (event : Types.Received.KeyPayload) (next : EventFunc) (ctx: EventContext) = async {
-    let ctx' = Core.addLog $"In key up event handler, with event payload {event}" ctx
-    return! Core.flow next ctx'
-  }
+//   let keyUpEvent (event : Types.Received.KeyPayload) (next : EventFunc) (ctx: EventContext) = async {
+//     let ctx' = Core.addLog $"In key up event handler, with event payload {event}" ctx
+//     return! Core.flow next ctx'
+//   }
 
-  let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : EventFunc) (ctx: EventContext) = async {
-    let ctx' = Core.addLog $"In settings received handler, with event payload {settings}" ctx
-    return! Core.flow next ctx'
-  }
+//   let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : EventFunc) (ctx: EventContext) = async {
+//     let ctx' = Core.addLog $"In settings received handler, with event payload {settings}" ctx
+//     return! Core.flow next ctx'
+//   }
 
-  let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
-  let bindingErrorHandler (e) : EventHandler = Core.log($"In binding error handler, got event {e}")
+//   let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
+//   let bindingErrorHandler (e) : EventHandler = Core.log($"In binding error handler, got event {e}")
 
-  let settingsT = (Types.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
+//   let settingsT = (Types.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
 
-  let keyPayloadStateCheck targetState (payload : Types.Received.KeyPayload) =
-    payload.State = targetState
+//   let keyPayloadStateCheck targetState (payload : Types.Received.KeyPayload) =
+//     payload.State = targetState
 
-  let routes =
-    let t2 =
-      eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
+//   let routes =
+//     let t2 =
+//       eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
 
-    let keydownroute =
-      eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
-    let wakeUpRoute =
-      eventMatch Types.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
+//     let keydownroute =
+//       eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
+//     let wakeUpRoute =
+//       eventMatch Types.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
     
-    choose [
-      t2
-      keydownroute
-      wakeUpRoute
-    ]
+//     choose [
+//       t2
+//       keydownroute
+//       wakeUpRoute
+//     ]
 
-  //todo: try this, resolve types.
-  let matchFuction (ctx : EventContext) event =
-    match event with
-    | Types.Received.EventReceived.KeyDown payload ->
-      () |> Async.lift
-    | Types.Received.EventReceived.DidReceiveSettings payload ->
-      () |> Async.lift
-    | Types.Received.EventReceived.SystemWakeUp ->
-      () |> Async.lift
-    | _ ->
-      Core.addLog $"Unhandled event type:{event}" ctx |> ignore
-      () |> Async.lift
+//   //todo: try this, resolve types.
+//   let matchFuction (ctx : EventContext) event =
+//     match event with
+//     | Types.Received.EventReceived.KeyDown payload ->
+//       () |> Async.lift
+//     | Types.Received.EventReceived.DidReceiveSettings payload ->
+//       () |> Async.lift
+//     | Types.Received.EventReceived.SystemWakeUp ->
+//       () |> Async.lift
+//     | _ ->
+//       Core.addLog $"Unhandled event type:{event}" ctx |> ignore
+//       () |> Async.lift
 
-  let run() =
-    let args = {
-      StreamDeckSocketArgs.Port = 0
-      PluginUUID = System.Guid.Empty
-      RegisterEvent = ""
-      Info = ""
-    }
+//   let run() =
+//     let args = {
+//       StreamDeckSocketArgs.Port = 0
+//       PluginUUID = System.Guid.Empty
+//       RegisterEvent = ""
+//       Info = ""
+//     }
 
-    let client = Engine.StreamDeckClient(args, routes)
-    client.Run()
-    ()
+//     let client = StreamDeckClient(args, routes)
+//     client.Run()
+//     ()

@@ -14,16 +14,11 @@ routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=
 
 https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
 
-look into:
-
-websockets library
-https://github.com/TheAngryByrd/FSharp.Control.WebSockets
 
 
 
-## mimic
 
-I don't know if this will be possible based on how the sockets are supposed to work? but maybe.
+
 
 ---
 

@@ -1,6 +1,5 @@
 open System
-open StreamDeckDotnet.Websockets
-open StreamDeckDotnet.Engine
+open StreamDeckDotnet
 open StreamDeckDotnet.Logging
 open Serilog
 open Example
