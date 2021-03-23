@@ -13,8 +13,14 @@ module Routing =
 
   let myAction (event : EventReceived) (next: EventFunc) (ctx : EventContext) = async {
     !! "in My Action handler, with event {event}" >>!+ ("event", event) |> logger.info
-    let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
-    return! Core.flow next ctx'
+    let ctx' = Core.addLogToContext $"in My Action handler, with event {event}" ctx
+    return! next ctx'
+  }
+
+  let appearHandler (event : EventReceived) next ctx = async {
+    !! "In Will Appear handler, with event {event}" >>!+ ("event", event) |> logger.info
+    let ctx' = Core.addLogToContext $"In appear handler, with event {event}" ctx
+    return! next ctx'
   }
 
   let errorHandler (err : PipelineFailure) : EventHandler =
@@ -23,4 +29,5 @@ module Routing =
 
   let routes : EventRoute = choose [
     KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
+    WILL_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
   ]

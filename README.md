@@ -16,8 +16,26 @@ https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-func
 
 
 
+# TODO
 
+## Mimic
 
+* Set action coordinates
+* batch send events via queue to stress test a plugin
+* test multi instance & combine with batch send
+
+## SD.NET
+
+* finish implementing all event types
+  * payloads
+  * encoding
+  * decoding
+    * trybind functions
+    * routing helpers
+
+## Documetnation
+
+* start
 
 
 ---

@@ -11,6 +11,7 @@
     </Compile>
     <Compile Include="../../src/StreamDeckDotnet/Helpers.fs" />
     <Compile Include="../../src/StreamDeckDotnet/Types.fs" />
+    <Compile Include="Send.fs" />
     <Compile Include="CLI.fs" />
     <Compile Include="ArgsParsing.fs" />
     <Compile Include="Webhost.fs" />

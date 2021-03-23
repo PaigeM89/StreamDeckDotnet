@@ -22,7 +22,7 @@ module TestHelpers =
 
     let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
     let myAction (event : EventReceived) (next: EventFunc) (ctx : EventContext) = async {
-        let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
+        let ctx' = Core.addLogToContext $"in My Action handler, with event {event}" ctx
         return! Core.flow next ctx'
     }
 
@@ -111,8 +111,8 @@ module RoutingEngineTests =
             testCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
                 let ctx = withEvent "action1"
                 let route = choose [
-                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLog $"action 1: {x}" |> Core.flow next)
-                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLog $"action 2: {x}" |>  Core.flow next)
+                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 1: {x}" |> Core.flow next)
+                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 2: {x}" |>  Core.flow next)
                 ]
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context"
@@ -120,15 +120,15 @@ module RoutingEngineTests =
             testCase "Inspect multiple routes picks based on action - action2" <| fun _ ->
                 let ctx = withEvent "action2"
                 let route = choose [
-                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |>  addLog $"action 1: {x}" |>  Core.flow next)
-                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLog $"action 2: {x}" |>  Core.flow next)
+                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |>  addLogToContext $"action 1: {x}" |>  Core.flow next)
+                    eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 2: {x}" |>  Core.flow next)
                 ]
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context"
 
             testCase "bind event binds empty payload event" <| fun _ ->
                 let ctx = withEvent EventNames.SystemDidWakeUp
-                let route = tryBindEvent errorHandler (fun x next ctx -> ctx |> addLog "successfully bound event" |> flow next )
+                let route = tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext "successfully bound event" |> flow next )
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
@@ -148,7 +148,7 @@ module ContextSendEventTests =
 
     [<Tests>]
     let tests = testList "Context Events To Send" [
-        testCase "Adding no events returns no events" <| fun _ ->
+        testCase "Adding no log events returns no log events" <| fun _ ->
             let ctx = withEvent action
             let route = eventMatch action >=> Core.flow
             let output = runTest route next ctx

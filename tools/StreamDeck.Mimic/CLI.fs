@@ -3,10 +3,6 @@ namespace StreamDeck.Mimic
 open System
 open Spectre.Console
 
-module Statics =
-  let device = "device(@(1)[4057/96/AL44H1C18339]): 1.0.170133" |> Some
-  let context = Guid.NewGuid().ToString("N") |> Some
-
 module CLI =
   open StreamDeckDotnet
   open StreamDeckDotnet.Types
@@ -46,58 +42,18 @@ module CLI =
       Prompt.builder() |> Prompt.withTitle "Main Menu" |> Prompt.withPageSize 10 |> Prompt.withChoices menu
     AnsiConsole.Prompt(prompt)
 
-    
-  module SendEvent =
-    open StreamDeckDotnet.Types.Received
-
-    let sendEventList =
-      [
-        "Exit Menu"
-        "Key Down"
-      ] |> List.toArray
-
-    let renderSendEventMenu() =
+  let renderSendEventMenu() =
       let prompt =
         Prompt.builder()
         |> Prompt.withTitle "Send Event"
         |> Prompt.withPageSize 10
-        |> Prompt.withChoices sendEventList
+        |> Prompt.withChoices SendEvent.sendEventList
 
       AnsiConsole.Prompt prompt
 
-    let metadataBuilder context event payload = 
-      {
-        EventMetadata.Action = Some "org.streamdeckdotnet.mimic"
-        EventMetadata.Event = event
-        EventMetadata.Context = context
-        EventMetadata.Device = None
-        EventMetadata.Payload = payload()
-      }
-
-    let baseCoords = {
-      Coordinates.Column = 0
-      Coordinates.Row = 0
-    }
-
-    let buildKeyDownEvent() =
-      {
-        KeyPayload.Settings = toJToken "{}"
-        KeyPayload.Coordinates = baseCoords
-        KeyPayload.State = 0u
-        KeyPayload.UserDesiredState = 0u
-        KeyPayload.IsInMultiAction = false
-      } |> KeyDown
-
-    let handleSendEventInput (input : string) =
-      let bldr event payload = metadataBuilder Statics.context event payload
-      match input.ToLowerInvariant() with
-      | "key down" ->
-        buildKeyDownEvent() |> Some
-      | _ -> None
-
-    let pickAndBuildSendEvent() =
+  let pickAndBuildSendEvent() =
       renderSendEventMenu()
-      |> handleSendEventInput
+      |> SendEvent.handleSendEventInput
 
   type Commands =
   | Exit
@@ -111,7 +67,7 @@ module CLI =
       renderInfo "Checking if web socket message has been received..."
       ReturnToMenu
     | "send event" ->
-      SendEvent.pickAndBuildSendEvent() |> SendEvent
+      pickAndBuildSendEvent() |> SendEvent
     | _ ->
       renderError $"Unrecognized user input: ${input}"
       Exit

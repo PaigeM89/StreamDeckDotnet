@@ -15,16 +15,13 @@ module Context =
   | DecodeFailure of input : string * errorMsg : string
   /// The event type is not known and cannot be decoded.
   | UnknownEventType of eventName : string
-  /// Attempted to decode a payload for a type that does not have a payload, such as SystemWakeUp
+  /// Attempted to decode a payload for a type that does not have a payload, such as SystemDidWakeUp
   | NoPayloadForType of eventName : string
   /// Attempted to decode a type that requires a payload, but the payload was not found.
   | PayloadMissing
   /// A specific event handler (eg, `tryBindToKeyPayload`) attempted to decode a payload, but 
   /// the event received was a different event type.
   | WrongEvent of encounteredEvent : string * expectedEvent : string
-  /// This error case should be removed at some point. It denotes a failure where a more specific failure type
-  /// has not been created.
-  | Placeholder
 
   /// Checks a given input & result, and generates a `DecodeFailure` if the result is a failure.
   let inline mapDecodeError<'a> input (res : Result<_, string>) = 
@@ -81,10 +78,13 @@ module Context =
         let event = eventMetadata.Event.ToLowerInvariant()
         match event with
         | InvariantEqual EventNames.KeyDown ->
-          let func = Types.tryDecodePayload Types.Received.KeyPayload.Decoder EventReceived.KeyDown
+          let func = 
+            Types.tryDecodePayload 
+              Types.Received.KeyPayloadDU.Decoder
+              (fun v -> KeyPayloadDU.KeyDown v |> EventReceived.KeyDown)
           fun p -> decode (PayloadRequired (func, p))
         | InvariantEqual EventNames.SystemDidWakeUp ->
-          fun _ -> decode (NoPayloadRequired SystemWakeUp)
+          fun _ -> decode (NoPayloadRequired SystemDidWakeUp)
         | _ ->
           fun _ -> UnknownEventType event |> Error
       return! decoder eventMetadata.Payload

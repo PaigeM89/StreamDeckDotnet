@@ -85,24 +85,34 @@ module Core =
   let validateAction (s : string) (t : string) =
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
+  /// Validates that the action in the EventContext is a "didReceiveSettings" action.
+  let DID_RECEIVE_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveSettings)
+  /// Validates that the action in the EventContext is a "didReceiveGlobalSettings" action.
+  let DID_RECEIVE_GLOBAL_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveGlobalSettings)
   /// Validates that the action in the EventContext is a "keyDown" action.
   let KEY_DOWN : EventHandler = validateEvent (validateAction EventNames.KeyDown)
+  /// Validates that the action in the EventContext is a "keyUp" action.
+  let KEY_UP : EventHandler = validateEvent (validateAction EventNames.KeyUp)
+  /// Validates that the action in the EventContext is a "willAppear" action.
+  let WILL_APPEAR : EventHandler = validateEvent (validateAction EventNames.WillAppear)
+  /// Validates that the action in the EventContext is a "willDisappear" action.
+  let WILL_DISAPPEAR : EventHandler = validateEvent (validateAction EventNames.WillDisappear)
   /// Validates that the action in the EventContext is a "systemDidWakeUp" action.
   let SYSTEM_WAKE_UP : EventHandler = validateEvent (validateAction EventNames.SystemDidWakeUp)
-  /// Validates that the action in the EventContext is a "keyDown" action.
-  let KEY_UP : EventHandler = validateEvent (validateAction EventNames.KeyDown)
 
-  /// Adds the passed message to the Logs in the Context and returns the Context.
-  /// Note that the context is the same object and is only returned for chaining.
-  let addLog (msg : string) (ctx : EventContext) =
+
+  /// <summary>Adds the passed message to the Logs in the Context and returns the Context.</summary>
+  /// <remarks>
+  /// The context is unchanged and is the same object as the one passed in.
+  /// </remarks>
+  let addLogToContext (msg : string) (ctx : EventContext) =
     let log = createLogEvent msg
     Context.addSendEvent log ctx
 
-  /// Adds the passed message to the Logs in the context and terminates the event processing pipeline with
-  /// that context.
+  /// Adds the passed message to the Logs in the context and continues processing.
   let log (msg : string) : EventHandler =
     fun (next : EventFunc) (ctx : EventContext) ->
-      addLog msg ctx
+      addLogToContext msg ctx
       |> next
 
   /// Flow the event handler to the next function, ignoring the passed function

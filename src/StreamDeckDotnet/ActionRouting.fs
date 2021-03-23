@@ -21,50 +21,46 @@ module ActionRouting =
       fun next ctx ->
         next ctx
 
-
   /// Accepts a function that takes the action context and validates if the action route is valid.
   let appState (stateCheck: EventContext -> bool) =
     fun next ctx ->
       next ctx
 
+  /// Tries to bind the event received in the context using the given match function.
   let matcher matchFunc =
     let logErrorHandler err =
       Core.log $"Error handling event: {err}"
     fun next (ctx: EventContext) ->
       tryBindEvent logErrorHandler (matchFunc ctx) next ctx
 
-
+  /// Validates that the event received in the context matches the given event name.
+  /// This validation is case insensitive.
   let eventMatch (eventName : string) : EventHandler =
     fun (next : EventFunc) (ctx : Context.EventContext) ->
       let validate = Core.validateAction eventName
       Core.validateEvent validate next ctx
 
-
+  /// Attempts to bind the event received in the context to a KeyUp or KeyDown payload, then runs the success case handler.
+  /// If the bind is not successful, the binding error handler is run.
+  /// If the decoding is not successful, the decoding error handler is run.
   let tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler =
     fun next ctx -> 
       let validatePayload e =
         match e with
-        | Received.KeyUp payload -> successHandler payload
-        | Received.KeyDown payload -> successHandler payload
+        | Received.EventReceived.KeyUp payload -> successHandler (payload.Payload)
+        | Received.EventReceived.KeyDown payload -> successHandler (payload.Payload)
         | _ -> bindingErrorHandler e next ctx
       tryBindEvent decodingErrorHandler validatePayload next ctx
 
+  /// Attempts to bind the event received in the context to a `KeyDown` event, then runs the success handler.
+  /// If the decoding or binding is not successful, the error handler is run.
   let tryBindKeyDownEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.KeyPayload -> EventHandler) =
     fun next (ctx : EventContext) ->
       let filter (e : Received.EventReceived)  = 
         match e with
-        | Received.EventReceived.KeyDown payload -> successHandler payload
+        | Received.EventReceived.KeyDown payload -> successHandler (payload.Payload)
         | _ -> errorHandler (Context.PipelineFailure.WrongEvent ((e.GetName()), EventNames.KeyDown))
       tryBindEvent errorHandler filter next ctx
-
-  let tryBindKeyDownEventPipeline (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.KeyPayload -> EventHandler) =
-    fun next (ctx : EventContext) ->
-      let filter (e : Received.EventReceived)  = 
-        match e with
-        | Received.EventReceived.KeyDown payload -> successHandler payload
-        | _ -> errorHandler Context.PipelineFailure.Placeholder
-      tryBindEvent errorHandler filter next ctx
-
 
 module internal Engine =
   open FsToolkit.ErrorHandling
@@ -188,7 +184,7 @@ module Client =
 //       () |> Async.lift
 //     | Types.Received.EventReceived.DidReceiveSettings payload ->
 //       () |> Async.lift
-//     | Types.Received.EventReceived.SystemWakeUp ->
+//     | Types.Received.EventReceived.SystemDidWakeUp ->
 //       () |> Async.lift
 //     | _ ->
 //       Core.addLog $"Unhandled event type:{event}" ctx |> ignore
