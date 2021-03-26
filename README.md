@@ -32,6 +32,7 @@ https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-func
   * decoding
     * trybind functions
     * routing helpers
+* Do we need some way to send events outside of handling events? eg, timer?
 
 ## Documetnation
 

@@ -9,6 +9,11 @@ module internal Encode =
   let stringOption so =
     so |> Option.defaultValue "" |> Encode.string
 
+  let maybeEncode n o f =
+    match o with
+    | Some x -> [ n, f x]
+    | None -> []
+
 [<AutoOpen>]
 module Types =
   open Newtonsoft.Json
@@ -395,7 +400,8 @@ module Types =
     | KeyDown of payload: KeyPayloadDU
     /// Received when a Stream Deck key is released after being pressed.
     | KeyUp of payload: KeyPayloadDU
-    /// Received after sending a `getSettings` to get the persistent data stored for this action.
+    /// <summary>Received after sending a `getSettings` to get the persistent data stored for this action.</summary>
+    /// <remarks>Can also be received if the Property Inspector updates settings for this action instance.</remarks>
     | DidReceiveSettings of payload : SettingsPayload
     /// Received after sending a `getGlobalSettings` to retrieve global persistent data.
     | DidReceiveGlobalSettings of payload : GlobalSettingsPayload
@@ -508,9 +514,27 @@ module Types =
   module Sent =
     open Newtonsoft.Json.Linq
 
-    /// 
+    /// Some messages can be set to affect only the hardware, only the software, or both.
+    type Target =
+    | HardwareAndSoftware = 0
+    | Hardware = 1
+    | Software = 2
+    
+    let TargetToInt (t : Target) =
+      match t with
+      | Target.HardwareAndSoftware -> 0
+      | Target.Hardware -> 1
+      | Target.Software -> 2
+      | _ -> 0
+
+    let TargetFromInt (v : int) =
+      match v with
+      | 1 -> Target.Hardware
+      | 2 -> Target.Software
+      | _ -> Target.HardwareAndSoftware
+
     type LogMessagePayload = {
-      Message : JValue
+      Message : string
     } with
         member this.Encode context device =
           let payload = [
@@ -518,6 +542,11 @@ module Types =
           ]
           encodeWithWrapper context device "logMessage" payload
     
+        static member Decoder : Decoder<LogMessagePayload> =
+          Decode.object (fun get -> {
+            Message = get.Required.Field "message" Decode.string
+          })
+
     type RegisterPluginPayload = {
       Event : string
       PluginGuid : Guid
@@ -533,20 +562,167 @@ module Types =
           PluginGuid = id
         }
 
-    type EventSent =
-    | RegisterPlugin of payload: RegisterPluginPayload
-    | InRegisterEvent of pluginUUID : Guid
-    | LogMessage of LogMessagePayload
-    with
+    type OpenUrlPayload = {
+      Url : string
+    } with
       member this.Encode context device =
-        match this with
-        | RegisterPlugin payload -> payload.Encode() |> Thoth.Json.Net.Encode.toString 0
-        | InRegisterEvent id -> Thoth.Json.Net.Encode.toString 0 (JValue(id))
-        | LogMessage payload ->
-          Thoth.Json.Net.Encode.toString 0 (payload.Encode context device)
+        [ "url", Encode.string this.Url ]
+        |> encodeWithWrapper context device "openUrl"
 
+      static member Decoder : Decoder<OpenUrlPayload> =
+        Decode.object(fun get -> {
+          Url = get.Required.Field "url" Decode.string
+        })
+
+
+    type SetTitlePayload = {
+      /// If None, the user-entered title will be set.
+      Title : string option
+      /// Specify if the title will change on the hardware, software, or both.
+      Target : Target
+      /// If None, the title will apply to all states of the action.
+      State : int option
+    } with
+      member this.Encode context device =
+        [
+          yield! Encode.maybeEncode "title" this.Title (Encode.string)
+          "target", Encode.int (this.Target |> TargetToInt)
+          yield! Encode.maybeEncode "state" this.State (Encode.int)
+        ]
+        |> encodeWithWrapper context device "setTitle"
+
+      static member Decoder : Decoder<SetTitlePayload> =
+        Decode.object(fun get -> {
+          Title = get.Optional.Field "title" Decode.string
+          Target = get.Required.Field "target" Decode.int |> TargetFromInt
+          State = get.Optional.Field "state" Decode.int
+        })
+
+    type SetImagePayload = {
+      /// A base-64 encoded string for the image, or an SVG image
+      Image : string
+      /// Specify if the title will change on the hardware, software, or both.
+      Target : Target
+      /// If None, the title will apply to all states of the action.
+      State : int option
+    } with
+      member this.Encode context device = 
+        [
+          "image", Encode.string this.Image
+          "target", Encode.int (this.Target |> TargetToInt)
+          yield! Encode.maybeEncode "state" this.State (Encode.int)
+        ]
+        |> encodeWithWrapper context device "setImage"
+
+      member this.Decoder : Decoder<SetImagePayload> =
+        Decode.object(fun get -> {
+          Image = get.Required.Field "image" Decode.string
+          Target = get.Required.Field "target" Decode.int |> TargetFromInt
+          State = get.Optional.Field "state" Decode.int
+        })
+
+    type SetStatePayload = {
+      State : int
+    } with
+      member this.Encode context device =
+        [
+          "state", Encode.int this.State
+        ]
+        |> encodeWithWrapper context device "setState"
+
+      static member Decoder : Decoder<SetStatePayload> =
+        Decode.object(fun get -> {
+          State = get.Required.Field "state" Decode.int
+        })
+
+    type SwitchToProfilePayload = {
+      Profile : string
+    } with
+      member this.Encode context device = 
+        [
+          "profile", Encode.string this.Profile
+        ]
+        |> encodeWithWrapper context device "switchToProfile"
+      
+      static member Decoder : Decoder<SwitchToProfilePayload> =
+        Decode.object(fun get -> {
+          Profile = get.Required.Field "profile" Decode.string
+        })
+
+    
+
+    /// Events sent from this plugin to the stream deck application.
+    type EventSent =
+    /// <summary>Sent after the plugin web socket has been initialized.</summary>
+    /// <remarks>This event is sent automatically by the web socket handler and does not need to be sent manually.</remarks>
+    | RegisterPlugin of payload: RegisterPluginPayload
+    //| InRegisterEvent of pluginUUID : Guid
+    /// <summary>Send messages to the Stream Deck to add to the logs.</summary>
+    /// <remarks>
+    /// This only logs a simple string and does not support structured logging.
+    /// Logs are found in `~/Library/Logs/StreamDeck/` on macOS and `%appdata%\Elgato\StreamDeck\logs\` on Windows.
+    ///</remarks>
+    | LogMessage of LogMessagePayload
+    /// <summary>Send a json object of settings to be persisted for this action instance in the stream deck application.</summary>
+    /// <remarks>
+    /// Sending this will automatically send a `DidReceiveSettings` callback to the Property Inspector with the new settings.
+    /// Similarly, if the Property Inspector updates settings, then this plugin will receive the updated settings.
+    /// </remarks>
+    | SetSettings of payload : JToken
+    /// <summary>Request the persistent data for this action instance from the stream deck application.</summary>
+    /// <remarks>The stream deck application will respond with a `DidReceiveSettings` event.</remarks>
+    | GetSettings
+    /// <summary>Send a json object of the settings to be persisted for all instances of this plugin.</summary>
+    /// <remarks>
+    /// This can also be set via the Property Inspector. Setting this will send a `DidReceiveGlobalSettings` event
+    /// to the Property Inspector.
+    /// 
+    /// These settings will be saved to the Keychain on macOS and to the Cerdential Store on Windows. This is useful for storing a shared token,
+    /// for example.
+    /// </remarks>
+    | SetGlobalSettings of payload : JToken
+    /// <summary>Request the global persistent data for (meaning "relevant to", not "for each") all instances of this action.</summary>
+    | GetGlobalSettings
+    /// <summary>Open the given URL on the default system browser.</summary>
+    | OpenUrl of payload : OpenUrlPayload
+    /// <summary>Update the title for an instance of the action.</summary>
+    /// <remarks>The title must already be set to visible for the change to be visible</remarks>
+    | SetTitle of paylod : SetTitlePayload
+    /// <summary>Change the image displayed by an instance of the action.</summary>
+    | SetImage of payload : SetImagePayload
+    /// Temporarily show an alert icon on the image for an instance of the action.
+    | ShowAlert
+    /// Temporarily show an OK checkmark on the image for an instance of the action.
+    | ShowOk
+    /// Change the state for an instance of the action for an action that supports multiple states.
+    | SetState of payload : SetStatePayload
+    /// Tell the stream deck application to switch to one of the predefined profiles from the `manifest.json`.
+    | SwitchToProfile of payload : SwitchToProfilePayload
+    /// Send a payload to the Property Inspector for an instance of the action.
+    | SendToPropertyInspector of payload : JToken
+    with
+      /// Encodes this event to a json-ified string to send to the stream deck application.
+      /// Events are encoded automatically when the web socket finishes handling an event.
+      member this.Encode context device =
+        let encode x = Thoth.Json.Net.Encode.toString 0 x
+        match this with
+        | RegisterPlugin payload -> payload.Encode() |> encode
+        //| InRegisterEvent id -> encode (JValue(id))
+        | LogMessage payload -> payload.Encode context device |> encode
+        | SetSettings payload -> encodeWithWrapper context device "setSettings" ["payload", payload] |> encode
+        | GetSettings -> encodeWithWrapper context device "getSettings" [] |> encode
+        | SetGlobalSettings payload -> encodeWithWrapper context device "setGlobalSettings" ["payload", payload] |> encode
+        | GetGlobalSettings -> encodeWithWrapper context device "getGlobalSettings" [] |> encode
+        | OpenUrl payload -> payload.Encode context device |> encode
+        | SetTitle payload -> payload.Encode context device |> encode
+        | SetImage payload -> payload.Encode context device |> encode
+        | ShowAlert -> encodeWithWrapper context device "showAlert" [] |> encode
+        | ShowOk -> encodeWithWrapper context device "showOk" [] |> encode
+        | SetState payload -> payload.Encode context device |> encode
+        | SwitchToProfile payload -> payload.Encode context device |> encode
+        | SendToPropertyInspector payload -> encodeWithWrapper context device "sendToPropertyInspector" [ "payload", payload ] |> encode
 
   let createLogEvent (msg : string) =
-    let payload = { Sent.LogMessagePayload.Message = JValue(msg) }
+    let payload = { Sent.LogMessagePayload.Message = msg }
     Sent.LogMessage payload
 
