@@ -29,28 +29,64 @@ module Types =
   let (|InvariantEqual|_|) (str: string) arg =
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some() else None
 
-  /// Event names in all lower case for invariant case equals checks.
+  /// Event names in camelCase, which matches the case used in messages from the stream deck application.
   module EventNames =
     [<Literal>]
-    let DidReceiveSettings = "didreceivesettings"
+    let DidReceiveSettings = "didReceiveSettings"
     [<Literal>]
-    let DidReceiveGlobalSettings = "didreceiveglobalsettings"
+    let DidReceiveGlobalSettings = "didReceiveGlobalSettings"
     [<Literal>]
-    let KeyDown = "keydown"
+    let KeyDown = "keyDown"
     [<Literal>]
-    let KeyUp = "keyup"
+    let KeyUp = "keyUp"
     [<Literal>]
-    let WillAppear = "willappear"
+    let WillAppear = "willAppear"
     [<Literal>]
-    let WillDisappear = "willdisappear"
+    let WillDisappear = "willDisappear"
     [<Literal>]
-    let TitleParametersDidChange = "titleparametersdidchange"
+    let TitleParametersDidChange = "titleParametersDidChange"
     [<Literal>]
-    let DeviceDidConnect = "devicedidconnect"
+    let DeviceDidConnect = "deviceDidConnect"
     [<Literal>]
-    let DeviceDidDisconnect = "devicediddisconnect"
+    let DeviceDidDisconnect = "deviceDidDisconnect"
     [<Literal>]
-    let SystemDidWakeUp = "systemdidwakeup"
+    let ApplicationDidLaunch = "applicationDidLaunch"
+    [<Literal>]
+    let ApplicationDidTerminate = "applicationDidTerminate"
+    [<Literal>]
+    let SystemDidWakeUp = "systemDidWakeUp"
+    [<Literal>]
+    let PropertyInspectorDidAppear = "propertyInspectorDidAppear"
+    [<Literal>]
+    let PropertyInspectorDidDisappear = "propertyInspectorDidDisappear"
+    [<Literal>]
+    let SendToPlugin = "sendToPlugin"
+    [<Literal>]
+    let OpenUrl = "openUrl"
+    [<Literal>]
+    let SetTitle = "setTitle"
+    [<Literal>]
+    let SetImage = "setImage"
+    [<Literal>]
+    let SetState = "setState"
+    [<Literal>]
+    let SwitchToProfile = "switchToProfile"
+    [<Literal>]
+    let SetSettings = "setSettings"
+    [<Literal>]
+    let GetSettings = "getSettings"
+    [<Literal>]
+    let SetGlobalSettings = "setGlobalSettings"
+    [<Literal>]
+    let GetGlobalSettings = "getGlobalSettings"
+    [<Literal>]
+    let ShowAlert = "showAlert"
+    [<Literal>]
+    let ShowOk = "showOk"
+    [<Literal>]
+    let SendToPropertyInspector = "sendToPropertyInspector"
+
+
 
   /// Attempts to decode the payload to the target type constructer using the given Decoder.
   let tryDecodePayload decoder targetType payload =
@@ -167,8 +203,8 @@ module Types =
 
       member this.Encode context device =
         match this with
-        | KeyDown p -> p.Encode context device "keyDown"
-        | KeyUp p -> p.Encode context device "keyUp"
+        | KeyDown p -> p.Encode context device EventNames.KeyDown
+        | KeyUp p -> p.Encode context device EventNames.KeyUp
 
       /// Get the payload for the key event. This loses any information on if this is a keydown or keyup event.
       member this.Payload =
@@ -195,7 +231,7 @@ module Types =
           "coordinates", Encode.object (this.Coordinates.Encode())
           "isInMultiAction", Encode.bool this.IsInMultiAction
         ]
-        encodeWithWrapper context device "didReceiveSettings" payload
+        encodeWithWrapper context device EventNames.DidReceiveSettings payload
 
     /// Settings bag for the plugin across all instances.
     type GlobalSettingsPayload = {
@@ -210,7 +246,7 @@ module Types =
         let payload = [
           "settings", Encode.string (this.Settings.ToString())
         ]
-        encodeWithWrapper context device "didReceiveGlobalSettings" payload
+        encodeWithWrapper context device EventNames.DidReceiveGlobalSettings payload
 
     /// Received when an instance of an action will appear or will disappear from the stream deck,
     /// such as when the user changes profiles or opens/leaves a folder.
@@ -235,7 +271,7 @@ module Types =
           "state", Encode.int this.State
           "isInMultiAction", Encode.bool this.IsInMultiAction
         ]
-        encodeWithWrapper context device "willAppear" payload
+        encodeWithWrapper context device EventNames.WillAppear payload
 
     /// Describes the markup used to display the title for an action.
     type TitleParameters = {
@@ -296,7 +332,7 @@ module Types =
           "title", Encode.stringOption this.Title
           "titleParameters", Encode.object (this.TitleParameters.Encode())
         ]
-        encodeWithWrapper context device "titleParameterDidChange" payload
+        encodeWithWrapper context device EventNames.TitleParametersDidChange payload
 
     /// The size of the device.
     type Size = {
@@ -360,7 +396,7 @@ module Types =
           "type", Encode.int (this.Type |> DeviceTypeToInt)
           "size", Encode.object (this.Size.Encode())
         ]
-        encodeWithWrapper context device "deviceDidConnect" payload
+        encodeWithWrapper context device EventNames.DeviceDidConnect payload
 
     /// Name of an application that has launched or terminated
     type ApplicationPayload = {
@@ -386,8 +422,8 @@ module Types =
 
       member this.Encode context device =
         match this with
-        | Launch p -> p.Encode context device "applicationDidLaunch"
-        | Terminate p -> p.Encode context device "applicationDidTerminate"
+        | Launch p -> p.Encode context device EventNames.ApplicationDidLaunch
+        | Terminate p -> p.Encode context device EventNames.ApplicationDidTerminate
 
       member this.Payload =
         match this with
@@ -463,24 +499,24 @@ module Types =
     /// <summary>Received when the Property Inspector sends a `SendToPlugin` event.</summary>
     | SendToPlugin
       with
-        /// The name of the event in CamelCase.
+        /// The name of the event in camelCase.
         member this.GetName() =
           match this with
-          | KeyDown _ -> "KeyDown"
-          | KeyUp _ -> "KeyUp"
-          | DidReceiveSettings _ -> "DidReceiveSettings"
-          | DidReceiveGlobalSettings _ -> "DidReceiveGlobalSettings"
-          | WillAppear _ -> "WillAppear"
-          | WillDisappear _ -> "WillDisappear"
-          | TitleParametersDidChange _ -> "TitleParametersDidChange"
-          | DeviceDidConnect _ -> "DeviceDidConnect"
-          | DeviceDidDisconnect _ -> "DeviceDidDisconnect"
-          | ApplicationDidLaunch _ -> "ApplicationDidLaunch"
-          | ApplicationDidTerminate _ -> "ApplicationDidTerminate"
-          | SystemDidWakeUp -> "SystemDidWakeUp"
-          | PropertyInspectorDidAppear -> "PropertyInspectorDidAppear"
-          | PropertyInspectorDidDisappear -> "PropertyInspectorDidDisappear"
-          | SendToPlugin -> "SendToPlugin"
+          | KeyDown _ -> EventNames.KeyDown
+          | KeyUp _ -> EventNames.KeyUp
+          | DidReceiveSettings _ -> EventNames.DidReceiveSettings
+          | DidReceiveGlobalSettings _ -> EventNames.DidReceiveGlobalSettings
+          | WillAppear _ -> EventNames.WillAppear
+          | WillDisappear _ -> EventNames.WillDisappear
+          | TitleParametersDidChange _ -> EventNames.TitleParametersDidChange
+          | DeviceDidConnect _ -> EventNames.DeviceDidConnect
+          | DeviceDidDisconnect _ -> EventNames.DeviceDidDisconnect
+          | ApplicationDidLaunch _ -> EventNames.ApplicationDidLaunch
+          | ApplicationDidTerminate _ -> EventNames.ApplicationDidTerminate
+          | SystemDidWakeUp -> EventNames.SystemDidWakeUp
+          | PropertyInspectorDidAppear -> EventNames.PropertyInspectorDidAppear
+          | PropertyInspectorDidDisappear -> EventNames.PropertyInspectorDidDisappear
+          | SendToPlugin -> EventNames.SendToPlugin
 
         /// <summary>
         /// Encodes this event with the optional context and device information.
@@ -567,7 +603,7 @@ module Types =
     } with
       member this.Encode context device =
         [ "url", Encode.string this.Url ]
-        |> encodeWithWrapper context device "openUrl"
+        |> encodeWithWrapper context device EventNames.OpenUrl
 
       static member Decoder : Decoder<OpenUrlPayload> =
         Decode.object(fun get -> {
@@ -589,7 +625,7 @@ module Types =
           "target", Encode.int (this.Target |> TargetToInt)
           yield! Encode.maybeEncode "state" this.State (Encode.int)
         ]
-        |> encodeWithWrapper context device "setTitle"
+        |> encodeWithWrapper context device EventNames.SetTitle
 
       static member Decoder : Decoder<SetTitlePayload> =
         Decode.object(fun get -> {
@@ -612,7 +648,7 @@ module Types =
           "target", Encode.int (this.Target |> TargetToInt)
           yield! Encode.maybeEncode "state" this.State (Encode.int)
         ]
-        |> encodeWithWrapper context device "setImage"
+        |> encodeWithWrapper context device EventNames.SetImage
 
       member this.Decoder : Decoder<SetImagePayload> =
         Decode.object(fun get -> {
@@ -628,7 +664,7 @@ module Types =
         [
           "state", Encode.int this.State
         ]
-        |> encodeWithWrapper context device "setState"
+        |> encodeWithWrapper context device EventNames.SetState
 
       static member Decoder : Decoder<SetStatePayload> =
         Decode.object(fun get -> {
@@ -642,7 +678,7 @@ module Types =
         [
           "profile", Encode.string this.Profile
         ]
-        |> encodeWithWrapper context device "switchToProfile"
+        |> encodeWithWrapper context device EventNames.SwitchToProfile
       
       static member Decoder : Decoder<SwitchToProfilePayload> =
         Decode.object(fun get -> {
@@ -709,18 +745,18 @@ module Types =
         | RegisterPlugin payload -> payload.Encode() |> encode
         //| InRegisterEvent id -> encode (JValue(id))
         | LogMessage payload -> payload.Encode context device |> encode
-        | SetSettings payload -> encodeWithWrapper context device "setSettings" ["payload", payload] |> encode
-        | GetSettings -> encodeWithWrapper context device "getSettings" [] |> encode
-        | SetGlobalSettings payload -> encodeWithWrapper context device "setGlobalSettings" ["payload", payload] |> encode
-        | GetGlobalSettings -> encodeWithWrapper context device "getGlobalSettings" [] |> encode
+        | SetSettings payload -> encodeWithWrapper context device EventNames.SetSettings ["payload", payload] |> encode
+        | GetSettings -> encodeWithWrapper context device EventNames.GetSettings [] |> encode
+        | SetGlobalSettings payload -> encodeWithWrapper context device EventNames.SetGlobalSettings ["payload", payload] |> encode
+        | GetGlobalSettings -> encodeWithWrapper context device EventNames.GetGlobalSettings [] |> encode
         | OpenUrl payload -> payload.Encode context device |> encode
         | SetTitle payload -> payload.Encode context device |> encode
         | SetImage payload -> payload.Encode context device |> encode
-        | ShowAlert -> encodeWithWrapper context device "showAlert" [] |> encode
-        | ShowOk -> encodeWithWrapper context device "showOk" [] |> encode
+        | ShowAlert -> encodeWithWrapper context device EventNames.ShowAlert [] |> encode
+        | ShowOk -> encodeWithWrapper context device EventNames.ShowOk [] |> encode
         | SetState payload -> payload.Encode context device |> encode
         | SwitchToProfile payload -> payload.Encode context device |> encode
-        | SendToPropertyInspector payload -> encodeWithWrapper context device "sendToPropertyInspector" [ "payload", payload ] |> encode
+        | SendToPropertyInspector payload -> encodeWithWrapper context device EventNames.SendToPropertyInspector [ "payload", payload ] |> encode
 
   let createLogEvent (msg : string) =
     let payload = { Sent.LogMessagePayload.Message = msg }
