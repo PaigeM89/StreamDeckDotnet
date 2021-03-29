@@ -104,7 +104,7 @@ module Types =
     /// A string describing the event, eg "didReceiveSettings"
     Event : string
 
-    /// A unique, opaque, non-controlled ID for the instance's action.
+    /// A unique, opaque, non-controlled ID for an action's instance.
     /// This identifies the specific button being pressed for a given action,
     /// which is relevant for actions that allow multiple instances.
     Context : string option
@@ -761,4 +761,7 @@ module Types =
   let createLogEvent (msg : string) =
     let payload = { Sent.LogMessagePayload.Message = msg }
     Sent.LogMessage payload
+
+  let createOkEvent() = Sent.ShowOk
+  let createAlertEvent() = Sent.ShowAlert
 

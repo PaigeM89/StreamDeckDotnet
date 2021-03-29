@@ -22,7 +22,7 @@ module Websockets =
 
     //https://github.com/fable-compiler/fable-browser/blob/master/src/WebSocket/Browser.WebSocket.fs
     
-    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit) = //, openHandler: unit -> unit) =
+    type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit) =
         let mutable msgQueue : string list = []
         let wsref : WebSocket option ref = ref None
         
@@ -39,7 +39,6 @@ module Websockets =
                         printfn "Socket had error!"
                     socket.onopen <- fun e ->
                         printfn "Socket was opened, on open being called! %A" e
-                        //openHandler()
                         printfn "MsgQueue is %A" msgQueue
                         msgQueue |> List.rev |> List.iter socket.send
                     socket.onclose <- fun _ ->
@@ -50,11 +49,9 @@ module Websockets =
                         Json.tryParseNativeAs(string e.data)
                         |> function
                             | Ok msg ->
-                                // Browser.console.log("websocket message is", msg)
                                 printfn "websocket msg is %A" msg
                                 messageHandler msg
                             | _ ->
-                                //Browser.console.log("could not parse message", e)
                                 printfn "could not parse message %A" e
             connect (60000) (getWebsocketServerUrl port)
             printfn "Websocket finished connect(), returning out of constructor"

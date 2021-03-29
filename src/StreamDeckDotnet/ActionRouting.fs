@@ -43,6 +43,7 @@ module ActionRouting =
   /// Attempts to bind the event received in the context to a KeyUp or KeyDown payload, then runs the success case handler.
   /// If the bind is not successful, the binding error handler is run.
   /// If the decoding is not successful, the decoding error handler is run.
+  [<System.Obsolete("Consider using a more specific binder")>]
   let tryBindToKeyPayload decodingErrorHandler bindingErrorHandler successHandler =
     fun next ctx -> 
       let validatePayload e =
@@ -56,10 +57,10 @@ module ActionRouting =
   /// If the decoding or binding is not successful, the error handler is run.
   let tryBindKeyDownEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.KeyPayload -> EventHandler) =
     fun next (ctx : EventContext) ->
-      let filter (e : Received.EventReceived)  = 
+      let filter (e : Received.EventReceived) =
         match e with
         | Received.EventReceived.KeyDown payload -> successHandler (payload.Payload)
-        | _ -> errorHandler (Context.PipelineFailure.WrongEvent ((e.GetName()), EventNames.KeyDown))
+        | _ -> errorHandler (WrongEvent ((e.GetName()), EventNames.KeyDown))
       tryBindEvent errorHandler filter next ctx
 
 module internal Engine =

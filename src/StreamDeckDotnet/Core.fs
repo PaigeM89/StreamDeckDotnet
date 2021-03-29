@@ -85,20 +85,38 @@ module Core =
   let validateAction (s : string) (t : string) =
     s.ToLowerInvariant() = t.ToLowerInvariant()
 
-  /// Validates that the action in the EventContext is a "didReceiveSettings" action.
-  let DID_RECEIVE_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveSettings)
-  /// Validates that the action in the EventContext is a "didReceiveGlobalSettings" action.
-  let DID_RECEIVE_GLOBAL_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveGlobalSettings)
-  /// Validates that the action in the EventContext is a "keyDown" action.
+  /// Validates that the event in the EventContext is a "keyDown" event.
   let KEY_DOWN : EventHandler = validateEvent (validateAction EventNames.KeyDown)
-  /// Validates that the action in the EventContext is a "keyUp" action.
+  /// Validates that the event in the EventContext is a "keyUp" event.
   let KEY_UP : EventHandler = validateEvent (validateAction EventNames.KeyUp)
-  /// Validates that the action in the EventContext is a "willAppear" action.
+  /// Validates that the event in the EventContext is a "didReceiveSettings" event.
+  let DID_RECEIVE_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveSettings)
+  /// Validates that the event in the EventContext is a "didReceiveGlobalSettings" event.
+  let DID_RECEIVE_GLOBAL_SETTINGS : EventHandler = validateEvent (validateAction EventNames.DidReceiveGlobalSettings)
+  /// Validates that the event in the EventContext is a "willAppear" event.
   let WILL_APPEAR : EventHandler = validateEvent (validateAction EventNames.WillAppear)
-  /// Validates that the action in the EventContext is a "willDisappear" action.
+  /// Validates that the event in the EventContext is a "willDisappear" event.
   let WILL_DISAPPEAR : EventHandler = validateEvent (validateAction EventNames.WillDisappear)
-  /// Validates that the action in the EventContext is a "systemDidWakeUp" action.
-  let SYSTEM_WAKE_UP : EventHandler = validateEvent (validateAction EventNames.SystemDidWakeUp)
+  /// Validates that the event in the EventContext is a "titleParametersDidChange" event
+  let TITLE_PARAMETERS_DID_CHANGE : EventHandler = validateEvent (validateAction EventNames.TitleParametersDidChange)
+  /// Validates that the event in the EventContext is a "deviceDidConnect" event
+  let DEVICE_DID_CONNECT : EventHandler = validateEvent (validateAction EventNames.DeviceDidConnect)
+  /// Validates that the event in the EventContext is a "deviceDidDisconnect" event
+  let DEVICE_DID_DISCONNECT : EventHandler = validateEvent (validateAction EventNames.DeviceDidDisconnect)
+  /// Validates that the event in the EventContext is an "applicationDidLaunch" event.
+  /// This does not validate the specific application.
+  let APPLICATION_DID_LAUNCH : EventHandler = validateEvent (validateAction EventNames.ApplicationDidLaunch)
+  /// Validates that the event in the EventContext is a "applicationDidTerminate" event
+  /// This does not validate the specific application.
+  let APPLICATION_DID_TERMINATE : EventHandler = validateEvent (validateAction EventNames.ApplicationDidTerminate)
+  /// Validates that the event in the EventContext is a "systemDidWakeUp" event.
+  let SYSTEM_DID_WAKE_UP : EventHandler = validateEvent (validateAction EventNames.SystemDidWakeUp)
+  /// Validates that the event in the EventContext is a "propertyInspectorDidAppear" event
+  let PROPERTY_INSPECTOR_DID_APPEAR : EventHandler = validateEvent (validateAction EventNames.PropertyInspectorDidAppear)
+  /// Validates that the event in the EventContext is a "propertyInspectorDidDisappear" event
+  let PROPERTY_INSPECTOR_DID_DISAPPEAR : EventHandler = validateEvent (validateAction EventNames.PropertyInspectorDidDisappear)
+  /// Validates that the event in the EventContext is a "sendToPlugin" event
+  let SEND_TO_PLUGIN : EventHandler = validateEvent (validateAction EventNames.SendToPlugin)
 
 
   /// <summary>Adds the passed message to the Logs in the Context and returns the Context.</summary>
@@ -109,11 +127,32 @@ module Core =
     let log = createLogEvent msg
     Context.addSendEvent log ctx
 
+  let addShowOk (ctx : EventContext) =
+    ctx.AddOk()
+    ctx
+
+  let addShowAlert (ctx : EventContext) =
+    ctx.AddAlert()
+    ctx
+
   /// Adds the passed message to the Logs in the context and continues processing.
   let log (msg : string) : EventHandler =
     fun (next : EventFunc) (ctx : EventContext) ->
       addLogToContext msg ctx
       |> next
+
+  /// Adds the passed message to the Logs in the context, with the event metadata added to the log, then continues processing.
+  let logWithContext msg : EventHandler =
+    fun next (ctx : EventContext) ->
+      let msg = msg + $"Event Metadata: {ctx.EventMetadata}"
+      addLogToContext msg ctx
+      |> next
+
+  /// Add an event for the action to show an "Ok" symbol, then continues processing.
+  let showOk = fun (next : EventFunc) ctx -> addShowOk ctx |> next
+  
+  /// Add an event for the action to show an "Alert" symbol, then continues processing.
+  let showAlert = fun (next : EventFunc) ctx -> addShowAlert ctx |> next
 
   /// Flow the event handler to the next function, ignoring the passed function
   let flow (_ : EventFunc) (ctx: EventContext) = Context.lift ctx

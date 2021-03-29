@@ -19,7 +19,7 @@ module Context =
   | NoPayloadForType of eventName : string
   /// Attempted to decode a type that requires a payload, but the payload was not found.
   | PayloadMissing
-  /// A specific event handler (eg, `tryBindToKeyPayload`) attempted to decode a payload, but 
+  /// A specific event handler (eg, `tryBindKeyDownEvent`) attempted to decode a payload, but 
   /// the event received was a different event type.
   | WrongEvent of encounteredEvent : string * expectedEvent : string
 
@@ -99,15 +99,48 @@ module Context =
       | Some es ->
         _eventsToSend <- Some (e :: es)
 
+    /// Adds the given log message to the event queue.
+    member this.AddLog msg =
+      let log = createLogEvent msg
+      _sendEventQueue.Enqueue(log)
+
+    /// Adds a "Show Ok" event to the event queue.
+    member this.AddOk() =
+      let ok = createOkEvent()
+      _sendEventQueue.Enqueue(ok)
+
+    /// Adds a "Show Alert" event to the event queue.
+    member this.AddAlert() =
+      let ohno = createAlertEvent()
+      _sendEventQueue.Enqueue(ohno)
+
     /// Returns a list of the events that will be sent to StreamDeck.
+    [<System.Obsolete("Use the event queue")>]
     member this.GetEventsToSendFromList() = 
       match _eventsToSend with
       | Some x -> x
       | None -> []
 
     /// Returns a list of the events that will be sent to StreamDeck, in the order they were added.
+    /// This is called at the end of event processing, when getting the list of events to send to the stream deck.
     member this.GetEventsToSend() =
       _sendEventQueue.ToArray() |> List.ofArray
+
+    member this.PurgeEventsMatching f =
+      /// there has to be a better way to do this.
+      let filteredEvents =
+        _sendEventQueue.ToArray()
+        |> Array.filter (fun x -> f x |> not)
+      _sendEventQueue.Clear()
+      filteredEvents |> Array.iter (fun x -> _sendEventQueue.Enqueue x)
+
+    member this.TryGetContextGuid() =
+      match this.EventMetadata.Context with
+      | Some x -> 
+        match System.Guid.TryParse x with
+        | true, v -> Some v
+        | false, _ -> None
+      | None -> None
 
   /// Adds the given `EventSent` to the `EventContext`
   let addSendEvent e (ctx : EventContext) = 
