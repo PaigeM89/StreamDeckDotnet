@@ -126,6 +126,7 @@ module Context =
     member this.GetEventsToSend() =
       _sendEventQueue.ToArray() |> List.ofArray
 
+    /// Removes all queued events that match the given predicate.
     member this.PurgeEventsMatching f =
       /// there has to be a better way to do this.
       let filteredEvents =

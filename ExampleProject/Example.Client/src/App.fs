@@ -108,7 +108,7 @@ module Models =
     type Msg = 
     | Connect
     | SendToSocket of toSend : Types.ClientSendEvent
-    | TestExternalMessage of count : int
+    //| TestExternalMessage of count : int
     | UpdatePort of port : int
 
 module Updates =
@@ -120,21 +120,11 @@ module Updates =
             |> Types.ClientSendEvent.PiRegisterEvent
         model, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
 
-    let sendRegisterEventSub (model: Model) =
-        let registerEvent = 
-            Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
-            |> Types.ClientSendEvent.PiRegisterEvent
-            |> Models.Msg.SendToSocket
-        let sub dispatch =
-            Browser.Dom.window.setTimeout((fun _ -> dispatch registerEvent), 3000)
-            |> ignore
-        Cmd.ofSub sub
-
-    let sendRegisterEventFunc (model : Model) () =
-        let registerEvent = 
-            Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
-            |> Types.ClientSendEvent.PiRegisterEvent
-        model.Send(registerEvent)
+    // let sendRegisterEventFunc (model : Model) () =
+    //     let registerEvent = 
+    //         Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
+    //         |> Types.ClientSendEvent.PiRegisterEvent
+    //     model.Send(registerEvent)
 
     let init (initialModel : Model) =
         initialModel , Cmd.ofMsg Connect
@@ -142,12 +132,16 @@ module Updates =
     let msgPrinter msg =
         printfn "Message: %s" msg
 
+    /// Recieves the pure string from the web socket, decodes it, and handles it
+    let msgHandler msg =
+        let decoded = 
+
+
     let update (msg:Msg) (model: Model) : (Model * Cmd<Models.Msg>)=
         printfn "In update function"
         match msg with
         | Connect ->
-            let onOpen = sendRegisterEventFunc model
-            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter) //, onOpen)
+            let ws = Websockets.Websocket(model.Port, model.PropertyInspectorUUID, msgPrinter)
             let model = { model with Websocket = Some ws }
 
             model, Cmd.none
@@ -161,9 +155,9 @@ module Updates =
                 ws.SendToSocket(encoded)
                 model, Cmd.none
         | UpdatePort port -> { model with Port = port }, Cmd.none
-        | TestExternalMessage count ->
-            printfn "handling test external message scenario"
-            model, Cmd.ofMsg (UpdatePort count)
+        // | TestExternalMessage count ->
+        //     printfn "handling test external message scenario"
+        //     model, Cmd.ofMsg (UpdatePort count)
 
 
 module View =
@@ -226,10 +220,5 @@ let connectStreamDeck
     }
 
     printfn "model created from external invoke is %A" model
-
-    // printfn "creating web socket..."
-    // let websocket = Websockets.Websocket(model.Port, model.PropertyInspectorUUID)
-
-    // let model' = { model with Websocket = Some websocket }
 
     startApp model

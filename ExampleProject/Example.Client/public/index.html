@@ -3,30 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <title>Example Project</title>
-  <!-- <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
-  <meta name="viewport" content="width=device-width, initial-scale=1"> -->
-  <!-- <link rel="shortcut icon" href="fable.ico" /> -->
   <link rel="stylesheet" href="sdpi.css">
 </head>
 <body>
-    <!-- <p>Fable is running</p> -->
     <script src="bundle.js"></script>
     <script type="text/JavaScript">
-      console.log('Loading core javascript');
+      // console.log('Loading core javascript');
       function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo) {
         EntryPoint.connectStreamDeck(inPort, inPluginUUID, inRegisterEvent, inInfo);
       }
-      console.log('ready to run!');
-      // connectElgatoStreamDeckSocket(28196, '066931d4-5941-8f51-b2d7-9919124da68e', 'registerPlugin', '');
-      
-      // function start(port) {
-      //   EntryPoint.externalStart(port);
-      // }
+      // console.log('ready to run!');
     </script>
     <!-- <div class="spdi-wrapper"> -->
-      <div class="sdpi-wrapper" id="elmish-app">
+      <!-- <div class="sdpi-wrapper" id="elmish-app">
         <details class="message"><summary>I'm a message inside the elmish app!</summary></details>
-      </div>
+      </div> -->
     <!-- </div> -->
 </body>
 </html>

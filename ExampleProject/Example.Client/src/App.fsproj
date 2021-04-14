@@ -5,7 +5,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../shared/Messages.fs" />
+    <Compile Include="EventHandling.fs" />
     <Compile Include="App.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/StreamDeckDotnet/StreamDeckDotnet.fsproj" />
   </ItemGroup>
   <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 </Project>

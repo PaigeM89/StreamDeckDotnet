@@ -18,7 +18,11 @@ module internal Encode =
 module Types =
   open Newtonsoft.Json
   open Newtonsoft.Json.Linq
+#if FABLE_COMPILER
+  open Thoth.Json
+#else
   open Thoth.Json.Net
+#endif
   open FsToolkit.ErrorHandling
   open StreamDeckDotnet.Logging
   open StreamDeckDotnet.Logger
@@ -124,8 +128,26 @@ module Types =
           Payload = get.Optional.Field "payload" Decode.string
         })
   
+  /// Creates a new `EventMetadata` that is built from decoding the given string, or returns an error message on decode failure.
   let decodeEventMetadata (str : string) =
     Decode.fromString EventMetadata.Decoder str
+
+  /// Encodes an Event without a payload.
+  let encodeWithoutPayload (context: string option) (device : string option) event =
+    Encode.object [
+      if context.IsSome then "context", Option.get context |> Encode.string
+      if device.IsSome then "device", Option.get device |> Encode.string
+      "event", Encode.string event
+    ]
+
+  /// Encodes an Event with a payload that is just the given JToken.
+  let encodeWithJson (context: string option) (device : string option) event (json : JToken) =
+    Encode.object [
+      if context.IsSome then "context", Option.get context |> Encode.string
+      if device.IsSome then "device", Option.get device |> Encode.string
+      "event", Encode.string event
+      "payload", json
+    ]
 
   //Encodes the payload with a wrapper containing metadata
   let encodeWithWrapper (context: string option) (device : string option) event payload =
@@ -150,6 +172,8 @@ module Types =
       !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
       token
 
+    /// The (x,y) location of an instance of an action. The top left is [0,0], with the bottom right being [xMax, yMax].
+    /// On a standard 15-key stream deck, the bottom right is [4,2].
     type Coordinates = {
       Column: int
       Row: int
@@ -497,7 +521,10 @@ module Types =
     /// <remarks>This is sent when the user clicks off an action in the stream deck software.</remarks>
     | PropertyInspectorDidDisappear
     /// <summary>Received when the Property Inspector sends a `SendToPlugin` event.</summary>
-    | SendToPlugin
+    | SendToPlugin of payload : JToken
+    /// <summary>Received by the Property Inspector when the plugin sends a `SendToPropertyInspector` event.</summary>
+    /// <remarks></remarks>
+    | SendToPropertyInspector of payload : JToken
       with
         /// The name of the event in camelCase.
         member this.GetName() =
@@ -516,7 +543,8 @@ module Types =
           | SystemDidWakeUp -> EventNames.SystemDidWakeUp
           | PropertyInspectorDidAppear -> EventNames.PropertyInspectorDidAppear
           | PropertyInspectorDidDisappear -> EventNames.PropertyInspectorDidDisappear
-          | SendToPlugin -> EventNames.SendToPlugin
+          | SendToPlugin _ -> EventNames.SendToPlugin
+          | SendToPropertyInspector _ -> EventNames.SendToPropertyInspector
 
         /// <summary>
         /// Encodes this event with the optional context and device information.
@@ -542,9 +570,22 @@ module Types =
             payload.Encode context device |> Encode.toString 0
           | DeviceDidConnect payload ->
             payload.Encode context device |> Encode.toString 0
-          // | DeviceDidDisconnect ->
-          //   payload.Encode context device |> Encode.toString 0
-          | _ -> ""
+          | DeviceDidDisconnect -> 
+            encodeWithoutPayload context device  EventNames.DeviceDidDisconnect|> Encode.toString 0
+          | ApplicationDidLaunch payload ->
+            payload.Encode context device |> Encode.toString 0
+          | ApplicationDidTerminate payload ->
+            payload.Encode context device |> Encode.toString 0
+          | SystemDidWakeUp ->
+            encodeWithoutPayload context device  EventNames.DeviceDidDisconnect|> Encode.toString 0
+          | PropertyInspectorDidAppear ->
+            encodeWithoutPayload context device  EventNames.DeviceDidDisconnect|> Encode.toString 0
+          | PropertyInspectorDidDisappear ->
+            encodeWithoutPayload context device  EventNames.DeviceDidDisconnect|> Encode.toString 0
+          | SendToPlugin payload ->
+            encodeWithJson context device EventNames.SendToPlugin payload |> Encode.toString 0
+          | SendToPropertyInspector payload ->
+            encodeWithJson context device EventNames.SendToPropertyInspector payload |> Encode.toString 0
 
   /// Events sent to the stream deck application.
   module Sent =
@@ -556,14 +597,14 @@ module Types =
     | Hardware = 1
     | Software = 2
     
-    let TargetToInt (t : Target) =
+    let private TargetToInt (t : Target) =
       match t with
       | Target.HardwareAndSoftware -> 0
       | Target.Hardware -> 1
       | Target.Software -> 2
       | _ -> 0
 
-    let TargetFromInt (v : int) =
+    let private TargetFromInt (v : int) =
       match v with
       | 1 -> Target.Hardware
       | 2 -> Target.Software
@@ -743,7 +784,6 @@ module Types =
         let encode x = Thoth.Json.Net.Encode.toString 0 x
         match this with
         | RegisterPlugin payload -> payload.Encode() |> encode
-        //| InRegisterEvent id -> encode (JValue(id))
         | LogMessage payload -> payload.Encode context device |> encode
         | SetSettings payload -> encodeWithWrapper context device EventNames.SetSettings ["payload", payload] |> encode
         | GetSettings -> encodeWithWrapper context device EventNames.GetSettings [] |> encode
@@ -758,10 +798,13 @@ module Types =
         | SwitchToProfile payload -> payload.Encode context device |> encode
         | SendToPropertyInspector payload -> encodeWithWrapper context device EventNames.SendToPropertyInspector [ "payload", payload ] |> encode
 
+  /// Creates a Log event containing the given message.
   let createLogEvent (msg : string) =
     let payload = { Sent.LogMessagePayload.Message = msg }
     Sent.LogMessage payload
 
+  /// Creates an Ok event to temporarily show an Ok icon on the action.
   let createOkEvent() = Sent.ShowOk
+  /// Creates an Alert event to temporarily show an Alert icon on the action.
   let createAlertEvent() = Sent.ShowAlert
 

@@ -34,6 +34,7 @@ https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-func
     * [x] routing helpers
 * Do we need some way to send events outside of handling events? eg, timer?
 * Should event binding bind to context, too? 
+* What all can fit in Fable to make a pure front-end plugin?
 
 ## Documetnation
 

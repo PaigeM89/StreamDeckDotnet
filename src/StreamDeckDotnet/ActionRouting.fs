@@ -70,15 +70,16 @@ module internal Engine =
 
   let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Engine")
 
-  type RequestHandler = EventFunc -> EventContext -> EventFuncResult
+  // type RequestHandler = EventFunc -> EventContext -> EventFuncResult
 
-  let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
-    async {
-      match! next ctx with
-      | Some ctx -> return! handler next ctx
-      | None -> return! skipPipeline
-    }
+  // let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
+  //   async {
+  //     match! next ctx with
+  //     | Some ctx -> return! handler next ctx
+  //     | None -> return! skipPipeline
+  //   }
 
+  // handles application registration & sends a `RegisterPlugin` event to streamdeck application.
   let handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
     let register = Types.Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
     !! "Creating registration event of {event}"
@@ -132,73 +133,3 @@ module Client =
     let _socket = Websockets.StreamDeckConnection(args, msgHandler, registerHandler)
 
     member this.Run() = _socket.Run()
-
-// module TestCode =
-//   open Core
-//   open Context
-//   open FsToolkit.ErrorHandling
-//   open Websockets
-//   open ActionRouting
-
-//   let myAction (event : Types.Received.EventReceived) (next: EventFunc) (ctx : EventContext) = async {
-//     let ctx' = Core.addLog $"in My Action handler, with event {event}" ctx
-//     return! Core.flow next ctx'
-//   }
-
-//   let keyUpEvent (event : Types.Received.KeyPayload) (next : EventFunc) (ctx: EventContext) = async {
-//     let ctx' = Core.addLog $"In key up event handler, with event payload {event}" ctx
-//     return! Core.flow next ctx'
-//   }
-
-//   let settingsReceivedHandler (settings : Types.Received.SettingsPayload) (next : EventFunc) (ctx: EventContext) = async {
-//     let ctx' = Core.addLog $"In settings received handler, with event payload {settings}" ctx
-//     return! Core.flow next ctx'
-//   }
-
-//   let errorHandler (err : PipelineFailure) : EventHandler = Core.log ($"in error handler, error: {err}")
-//   let bindingErrorHandler (e) : EventHandler = Core.log($"In binding error handler, got event {e}")
-
-//   let settingsT = (Types.EventNames.DidReceiveSettings, typeof<Types.Received.SettingsPayload>)
-
-//   let keyPayloadStateCheck targetState (payload : Types.Received.KeyPayload) =
-//     payload.State = targetState
-
-//   let routes =
-//     let t2 =
-//       eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyUpEvent
-
-//     let keydownroute =
-//       eventMatch Types.EventNames.KeyDown >=> Core.log "in KEY_DOWN handler" >=> tryBindEvent errorHandler myAction
-//     let wakeUpRoute =
-//       eventMatch Types.EventNames.SystemDidWakeUp >=> Core.log "in system wake up"
-    
-//     choose [
-//       t2
-//       keydownroute
-//       wakeUpRoute
-//     ]
-
-//   //todo: try this, resolve types.
-//   let matchFuction (ctx : EventContext) event =
-//     match event with
-//     | Types.Received.EventReceived.KeyDown payload ->
-//       () |> Async.lift
-//     | Types.Received.EventReceived.DidReceiveSettings payload ->
-//       () |> Async.lift
-//     | Types.Received.EventReceived.SystemDidWakeUp ->
-//       () |> Async.lift
-//     | _ ->
-//       Core.addLog $"Unhandled event type:{event}" ctx |> ignore
-//       () |> Async.lift
-
-//   let run() =
-//     let args = {
-//       StreamDeckSocketArgs.Port = 0
-//       PluginUUID = System.Guid.Empty
-//       RegisterEvent = ""
-//       Info = ""
-//     }
-
-//     let client = StreamDeckClient(args, routes)
-//     client.Run()
-//     ()
