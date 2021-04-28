@@ -1,9 +1,5 @@
 FSharp.Core
-
 group Fable
-  Thoth.Json
-  Fable.Core
-  Fable.Browser.Dom
-  Fable.Elmish
-  Fable.Elmish.React
-  Elmish.Bridge.Client
+Thoth.Json
+Fable.Elmish.React
+Elmish.Bridge.Client

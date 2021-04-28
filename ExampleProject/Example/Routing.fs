@@ -3,6 +3,7 @@ namespace ExampleProject
 open System
 
 open StreamDeckDotnet
+open StreamDeckDotnet.Routing.EventBinders
 open StreamDeckDotnet.Types.Received
 
 open StreamDeckDotnet.Logging

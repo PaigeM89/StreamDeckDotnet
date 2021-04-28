@@ -29,9 +29,10 @@ https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-func
 * finish implementing all event types
   * [x] payloads
   * [x] encoding
-  * [ ] decoding
-    * [ ] trybind functions
+  * [x] decoding
+    * [x] trybind functions
     * [x] routing helpers
+    * [x] Actual decoding in the context
 * Do we need some way to send events outside of handling events? eg, timer?
 * Should event binding bind to context, too? 
 * What all can fit in Fable to make a pure front-end plugin?

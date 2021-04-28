@@ -3,7 +3,11 @@ namespace StreamDeckDotnet
 open System
 
 module internal Encode =
+#if FABLE_COMPILER
+  open Thoth.Json
+#else
   open Thoth.Json.Net
+#endif
 
   /// Encodes the value of the string, or an empty string
   let stringOption so =
@@ -537,7 +541,7 @@ module Types =
           | WillDisappear _ -> EventNames.WillDisappear
           | TitleParametersDidChange _ -> EventNames.TitleParametersDidChange
           | DeviceDidConnect _ -> EventNames.DeviceDidConnect
-          | DeviceDidDisconnect _ -> EventNames.DeviceDidDisconnect
+          | DeviceDidDisconnect -> EventNames.DeviceDidDisconnect
           | ApplicationDidLaunch _ -> EventNames.ApplicationDidLaunch
           | ApplicationDidTerminate _ -> EventNames.ApplicationDidTerminate
           | SystemDidWakeUp -> EventNames.SystemDidWakeUp
@@ -781,7 +785,7 @@ module Types =
       /// Encodes this event to a json-ified string to send to the stream deck application.
       /// Events are encoded automatically when the web socket finishes handling an event.
       member this.Encode context device =
-        let encode x = Thoth.Json.Net.Encode.toString 0 x
+        let encode x = Encode.toString 0 x
         match this with
         | RegisterPlugin payload -> payload.Encode() |> encode
         | LogMessage payload -> payload.Encode context device |> encode

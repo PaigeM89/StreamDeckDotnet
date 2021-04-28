@@ -50,7 +50,7 @@ module TestHelpers =
 module RoutingEngineTests =
     open StreamDeckDotnet.Core
     open StreamDeckDotnet.Types
-    open StreamDeckDotnet.ActionRouting
+    open StreamDeckDotnet.Routing
     open TestHelpers
 
     [<Tests>]
@@ -141,7 +141,7 @@ module RoutingEngineTests =
 module ContextSendEventTests =
     open TestHelpers
     open StreamDeckDotnet.Core
-    open StreamDeckDotnet.ActionRouting
+    open StreamDeckDotnet.Routing
 
     let action = "action"
 

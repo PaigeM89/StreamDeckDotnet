@@ -1,7 +1,4 @@
-FSharp.Core
 Thoth.Json.Net
-
-Expecto
 Microsoft.NET.Test.Sdk
 YoloDev.Expecto.TestSdk
 altcover

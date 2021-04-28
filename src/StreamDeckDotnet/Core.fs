@@ -117,7 +117,8 @@ module Core =
   let PROPERTY_INSPECTOR_DID_DISAPPEAR : EventHandler = validateEvent (validateAction EventNames.PropertyInspectorDidDisappear)
   /// Validates that the event in the EventContext is a "sendToPlugin" event
   let SEND_TO_PLUGIN : EventHandler = validateEvent (validateAction EventNames.SendToPlugin)
-
+  /// Validates that the event in the EventContext is a "sendToPropertyInspector" event
+  let SEND_TO_PROPERTY_INSPECTOR : EventHandler = validateEvent (validateAction EventNames.SendToPropertyInspector)
 
   /// <summary>Adds the passed message to the Logs in the Context and returns the Context.</summary>
   /// <remarks>
