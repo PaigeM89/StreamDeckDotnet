@@ -1,16 +1,9 @@
-FSharp.Core
 Microsoft.SourceLink.GitHub
 Microsoft.NETFramework.ReferenceAssemblies
-Microsoft.Extensions.Logging
 Microsoft.Extensions.Logging.Console
 Microsoft.Extensions.Logging.Debug
-Serilog
 Serilog.Sinks.Console
 Serilog.Sinks.File
 Serilog.Settings.Configuration
-
-
+Argu
 File:FsLibLog.fs
-
-group Example
-  Argu

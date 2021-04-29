@@ -1,14 +1,10 @@
-FSharp.Core
 FSharp.Control.WebSockets
 Argu
 Thoth.Json.Net
 FsToolkit.ErrorHandling
-
 File:FsLibLog.fs
 
 group Tools
-  Spectre.Console
-  Fake.IO.FileSystem
-  Fake.Core.Target
-  Fake.DotNet.Cli
-
+Spectre.Console
+Fake.Core.Target
+Fake.DotNet.Cli

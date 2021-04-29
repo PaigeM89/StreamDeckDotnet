@@ -33,7 +33,6 @@ module TestHelpers =
     let next = fun (ctx : EventContext) ->  Some ctx |> Async.lift
 
     let runTest route next ctx = 
-        //evaluateStep route next ctx |> Async.RunSynchronously
         async {
             match! next ctx with
             | Some ctx -> return! route next ctx
@@ -51,7 +50,7 @@ module TestHelpers =
 module RoutingEngineTests =
     open StreamDeckDotnet.Core
     open StreamDeckDotnet.Types
-    open StreamDeckDotnet.ActionRouting
+    open StreamDeckDotnet.Routing
     open TestHelpers
 
     [<Tests>]
@@ -142,7 +141,7 @@ module RoutingEngineTests =
 module ContextSendEventTests =
     open TestHelpers
     open StreamDeckDotnet.Core
-    open StreamDeckDotnet.ActionRouting
+    open StreamDeckDotnet.Routing
 
     let action = "action"
 
