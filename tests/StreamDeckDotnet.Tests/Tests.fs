@@ -158,11 +158,12 @@ module ContextSendEventTests =
             | None -> failwith "Did not find context when it should have"
         testCase "Adding 2 events returns those events in the insert order" <| fun _ ->
             let ctx = withEvent action
-            let route = eventMatch action >=> Core.log "node1"  >=> Core.log "node2"
+            let route =
+                eventMatch action >=> Core.log "node1"  >=> Core.log "node2" >=> Core.log "node3"
             let output = runTest route next ctx
             match output with
             | Some ctx ->
                 let actual = printContextLogEvents ctx
-                Expect.equal actual [ "node1" ; "node 2" ] "Should not have generated any events to send"
+                Expect.equal actual [ "node1"; "node2"; "node3" ] "Should not have generated any events to send"
             | None -> failwith "Did not find context when it should have"
     ]
