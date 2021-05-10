@@ -68,7 +68,6 @@ let launchStreamDeck path =
         let cmd = Command.RawCommand("dotnet", Arguments.OfArgs (absolutePath::argsList))
 
         renderInfo $"Command to be run is:\n%A{cmd}"
-        //let processResult = 
         CreateProcess.fromCommand cmd
         |> Proc.run
         |> ignore
@@ -115,19 +114,6 @@ let main argv =
     with
     | ex ->
         renderError $"Error running main menu loop:\n  %s{ex.Message}\n{ex.StackTrace}"
-    
-    //CLI.mainMenuLoop socket
-        //CLI.renderMainMenu() |> inputToCommand
-    //renderInfo $"User selected %A{input}"
-
-    // renderInfo "Launching stream deck application..."
-    // let r = launchStreamDeck args.PathToDll
-    // match r with
-    // | Ok _ ->
-    //     let input = CLI.renderMainMenu()
-    //     renderInfo $"User input is {input}"
-    // | Error (StreamDeckProcessCrashed ex) ->
-    //     renderError $"Error running process: %s{ex.Message}\n%s{ex.StackTrace}"
 
     printfn "\nClosing StreamDeck.Mimic ..."
     0 // return an integer exit code

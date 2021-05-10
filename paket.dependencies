@@ -8,9 +8,9 @@ framework: netstandard2.0, net5.0
 
 github TheAngryByrd/FsLibLog:0dc37e8471dcece8f89d3f8cc9191be206d6fb01 src/FsLibLog/FsLibLog.fs
 
-nuget FSharp.Core ~> 5.0.1
+nuget FSharp.Core ~> 5.0
 nuget Microsoft.SourceLink.GitHub prerelease copy_local: true
-nuget Microsoft.NETFramework.ReferenceAssemblies copy_local: true
+# nuget Microsoft.NETFramework.ReferenceAssemblies copy_local: true
 nuget Microsoft.Extensions.Logging.Console
 nuget Microsoft.Extensions.Logging.Debug
 
@@ -43,31 +43,36 @@ group Tools
     source https://api.nuget.org/v3/index.json
     framework: netstandard2.0, net5.0
 
+
     nuget Spectre.Console
-    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
-    nuget Fake.Core.Target ~> 5.20.4-alpha.1642
-    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
-    nuget FAKE.Core.Process ~> 5.20.4-alpha.1642
+    nuget Fake.IO.FileSystem ~> 5.20.4
+    nuget Fake.Core.Target ~> 5.20.4
+    nuget Fake.DotNet.Cli ~> 5.20.4
+    nuget FAKE.Core.Process ~> 5.20.4
+    nuget Argu ~> 6
+    nuget Thoth.Json.Net
+    nuget FSharp.Control.WebSockets
+    nuget FsToolkit.ErrorHandling
 
 // [ FAKE GROUP ]
 group Build
     storage: none
     source https://api.nuget.org/v3/index.json
-    framework: netstandard2.0, net5.0
+    framework: netstandard2.0
 
-    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
-    nuget Fake.Core.Target ~> 5.20.4-alpha.1642
-    nuget Fake.Core.ReleaseNotes ~> 5.20.4-alpha.1642
-    nuget FAKE.Core.Environment ~> 5.20.4-alpha.1642
-    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
-    nuget FAKE.Core.Process ~> 5.20.4-alpha.1642
-    nuget Fake.DotNet.AssemblyInfoFile ~> 5.20.4-alpha.1642
-    nuget Fake.Tools.Git ~> 5.20.4-alpha.1642
-    nuget Fake.DotNet.Paket ~> 5.20.4-alpha.1642
-    nuget Fake.Api.GitHub ~> 5.20.4-alpha.1642
-    nuget Fake.BuildServer.AppVeyor ~> 5.20.4-alpha.1642
-    nuget Fake.BuildServer.Travis ~> 5.20.4-alpha.1642
-    nuget Fake.JavaScript.Npm ~> 5.20.4-alpha.1642
+    nuget Fake.IO.FileSystem ~> 5.20.4
+    nuget Fake.Core.Target ~> 5.20.4
+    nuget Fake.Core.ReleaseNotes ~> 5.20.4
+    nuget FAKE.Core.Environment ~> 5.20.4
+    nuget Fake.DotNet.Cli ~> 5.20.4
+    nuget FAKE.Core.Process ~> 5.20.4
+    nuget Fake.DotNet.AssemblyInfoFile ~> 5.20.4
+    nuget Fake.Tools.Git ~> 5.20.4
+    nuget Fake.DotNet.Paket ~> 5.20.4
+    nuget Fake.Api.GitHub ~> 5.20.4
+    nuget Fake.BuildServer.AppVeyor ~> 5.20.4
+    nuget Fake.BuildServer.Travis ~> 5.20.4
+    nuget Fake.JavaScript.Npm ~> 5.20.4
     nuget Fantomas ~> 3.2
     nuget Argu
 
@@ -77,12 +82,14 @@ group Docs
     source https://api.nuget.org/v3/index.json
     framework: net5.0
 
-    nuget Fake.IO.FileSystem ~> 5.20.4-alpha.1642
-    nuget FAKE.Core.Environment ~> 5.20.4-alpha.1642
-    nuget Fake.DotNet.Cli ~> 5.20.4-alpha.1642
+    nuget FSharp.Core ~> 5.0
+    nuget Fake.IO.FileSystem ~> 5.20.4
+    nuget FAKE.Core.Environment ~> 5.20.4
+    nuget Fake.DotNet.Cli ~> 5.20.4
     nuget FSharp.Formatting 4.0.0-rc1
     nuget FSharp.Literate 4.0.0-rc1
     nuget Fable.React
+    nuget Argu ~> 6
 
 #group Analyzers
 #    source https://www.nuget.org/api/v2
@@ -96,9 +103,11 @@ group Fable
     source https://api.nuget.org/v3/index.json
     framework: netstandard2.0
 
-    nuget FSharp.Core ~> 5.0.1
+    nuget FSharp.Core ~> 5.0
     nuget Thoth.Json ~> 5.1
     nuget Fable.Core ~> 3
+    nuget Fable.React
+    nuget Feliz
     nuget Fable.Browser.Dom ~> 2
     nuget Fable.Elmish.React
     nuget Elmish.Bridge.Client ~> 3

@@ -8,6 +8,11 @@ module Context =
   open FsToolkit.ErrorHandling
   open System.Collections.Concurrent
 
+  open StreamDeckDotnet.Logging
+  open StreamDeckDotnet.Logger.Operators
+  
+  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Context")
+
   /// A failure in the event pipeline to handle an event.
   /// This is only returned if the Context is expected to evaluate but does not.
   type PipelineFailure =
@@ -70,6 +75,8 @@ module Context =
     /// This is only populated when the event handler pipeline attempts to parse the event metadata event 
     /// type and payload.
     member _.EventReceived = _eventReceived
+
+    member this.EventName = this.EventMetadata.Event
 
     /// Attempts to bind the `Event` and `Payload` (if applicable) in the `EventMetadata` to 
     /// an `EventReceived`. This will automatically match the `Event` to the appropriate type.
@@ -185,6 +192,16 @@ module Context =
     /// This is called at the end of event processing, when getting the list of events to send to the stream deck.
     member _.GetEventsToSend() =
       _sendEventQueue.ToArray() |> List.ofArray
+
+    member this.GetEncodedEventsToSend() =
+      this.GetEventsToSend()
+      |> List.map (fun payload ->
+        let payload = payload.Encode this.EventMetadata.Context this.EventMetadata.Device
+        !! "Created event sent payload of {payload}"
+        >>!- ("payload", payload)
+        |> logger.debug
+        payload
+      )
 
     /// Removes all queued events that match the given predicate.
     member _.PurgeEventsMatching f =

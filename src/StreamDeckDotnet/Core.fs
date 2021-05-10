@@ -30,7 +30,7 @@ module Core =
   /// Short circuit the pipeline and return None, exiting that pipeline's processing.
   let skipPipeline : EventFuncResult = Async.lift None
 
-  /// Stop evaluating the rest of the pipeline and return Some, causing the event to be processed.
+  /// Stop evaluating the rest of the pipeline and return Some, causing the event to be successfully processed.
   let earlyReturn : EventFunc = Some >> Async.lift
 
   /// Combines two <see cref="EventHandler" /> functions into a single function.

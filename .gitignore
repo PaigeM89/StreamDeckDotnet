@@ -276,3 +276,10 @@ tools/StreamDeck.Mimic/log.txt
 log.txt
 ExampleProject/Example/publish/*
 ExampleProject/org.StreamDeckDotnet.Example.sdPlugin/*
+
+ExampleProject/Example.React.Client/node_modules/*
+ExampleProject/Example.React.Client/node_modules
+ExampleProject/Example.React.Client/**/bin
+ExampleProject/Example.React.Client/**/obj
+ExampleProject/Example.React.Client/**/.fable
+**/coverage.xml.*

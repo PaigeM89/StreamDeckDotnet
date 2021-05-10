@@ -74,15 +74,15 @@ module Websockets =
           ()
       }
 
-      let eventsEncoded (ctx : Context.EventContext) =
-        ctx.GetEventsToSend()
-        |> List.map (fun payloads -> 
-          let payload = payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
-          !! "Created event sent payload of {payload}"
-          >>!- ("payload", payload)
-          |> logger.debug
-          payload
-        )
+      // let eventsEncoded (ctx : Context.EventContext) =
+      //   ctx.GetEventsToSend()
+      //   |> List.map (fun payloads -> 
+      //     let payload = payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
+      //     !! "Created event sent payload of {payload}"
+      //     >>!- ("payload", payload)
+      //     |> logger.debug
+      //     payload
+      //   )
 
       let awaitAsyncReceive () =
         !! "calling ts websocket receive message as utf8" |> logger.trace
@@ -105,7 +105,7 @@ module Websockets =
           return ()
         }
 
-      member this.DisconnectAsync() = async {
+      member _.DisconnectAsync() = async {
           if _isOpen() then
             !! "attempting disconnect socket, currently has state {state}"
             >>!+ ("state", _tsWebsocket.State)
@@ -122,7 +122,7 @@ module Websockets =
             |> logger.warn
         }
 
-      member this.SendToSocketAsync(text : string) = async {
+      member _.SendToSocketAsync(text : string) = async {
         try
           try
             if _isOpen() then
@@ -149,7 +149,8 @@ module Websockets =
       member this.SendAllToSocketAsync(payloads : string list) = async {
         !! "Sending multiple payloads to socket" |> logger.trace
         let allAsyncs = payloads |> List.map this.SendToSocketAsync
-        do! Async.Sequential allAsyncs |> Async.Ignore
+        // We can't assume we can send all the messages at once; they may be order-dependent, based on context.
+        let! _ = Async.Sequential allAsyncs
         return ()
       }
 
@@ -165,7 +166,7 @@ module Websockets =
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
                 !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
                 let! ctx = receiveHandler (msgText)
-                do! ctx |> eventsEncoded |> this.SendAllToSocketAsync
+                do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
               | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->
                 !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
                 >>!+ ("status", status)
@@ -214,9 +215,10 @@ module Websockets =
 
       member this.Run() = this.RunAsync() |> Async.RunSynchronously
 
-      member this.Stop() =
+      member _.Stop() =
         _cancelSource.Cancel()
 
       interface IWebSocket with
         member this.SendAsync (str : string) = this.SendToSocketAsync str
-        member this.ReceiveHandler (str : string) = () |> Async.lift
+        // todo: figure out what i'm doing with this
+        member _.ReceiveHandler (str : string) = () |> Async.lift

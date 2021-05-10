@@ -1,5 +1,4 @@
 Microsoft.SourceLink.GitHub
-Microsoft.NETFramework.ReferenceAssemblies
 Microsoft.Extensions.Logging.Console
 Microsoft.Extensions.Logging.Debug
 Serilog.Sinks.Console

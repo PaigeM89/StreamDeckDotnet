@@ -1,7 +1,6 @@
 # Fable Minimal App
 
-
-This attemps to build a plugin using an Elmish architecture, but wiring up a webscoket connection to weave into the lifecycle has proven to be excessively complicated.
+This is a small Fable app project so you can easily get started and add your own code easily in it.
 
 ## Requirements
 
@@ -34,14 +33,3 @@ The sample only contains two F# files: the project (.fsproj) and a source file (
 ### Web assets
 
 The `index.html` file and other assets like an icon can be found in the `public` folder.
-
-## Running
-
-The app launches when `connectElgatoStreamDeckSocket` is called.
-
-Try calling it with this:
-
-```
-EntryPoint.connectElgatoStreamDeckSocket(1349, '806a7b6665e64acc8f264167c5ba4f09', 'registerPlugin', '', '');
-```
-

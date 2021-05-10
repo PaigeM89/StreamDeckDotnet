@@ -13,21 +13,32 @@ module Routing =
   type EventRoute = EventFunc -> EventContext -> EventFuncResult
 
   /// Routing that is only available once we have determined the payload type
-  module PayloadRouting = 
+  module private PayloadRouting = 
     let multiAction() = true
 
-    //todo: state router
-    let inline contextState (stateCheck : EventContext -> bool) errorHandler successHandler =
-      fun next ctx ->
-        if stateCheck ctx then
-          successHandler next ctx
-        else
-          errorHandler next ctx
-
   /// Accepts a function that takes the action context and validates if the action route is valid.
-  let appState (stateCheck: EventContext -> bool) =
+  /// TODO
+  let private appState (stateCheck: EventContext -> bool) =
     fun next ctx ->
       next ctx
+
+  /// Checks the `stateCheck` function before running the success handler.
+  /// Will run the error handler on failure.
+  let inline contextStateWithError (stateCheck : EventContext -> bool) errorHandler successHandler =
+    fun next ctx ->
+      if stateCheck ctx then
+        successHandler next ctx
+      else
+        errorHandler next ctx
+
+  /// Checks the `stateCheck` function before running the success handler.
+  /// Will skip the pipeline on a failure.
+  let inline contextState (stateCheck : EventContext -> bool) successHandler =
+    fun next ctx ->
+      if stateCheck ctx then
+        successHandler next ctx
+      else
+        skipPipeline
 
   /// Tries to bind the event received in the context using the given match function.
   let matcher matchFunc =
@@ -196,33 +207,24 @@ module Routing =
         | _ -> errorHandler (WrongEvent ((e.GetName()), EventNames.KeyDown))
       tryBindEventWithMatcher errorHandler filter
 
-module internal Engine =
+[<AutoOpen>]
+module Client =
   open FsToolkit.ErrorHandling
-  open Context
-  open Core
 
-  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Engine")
+  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Client")
 
-  // type RequestHandler = EventFunc -> EventContext -> EventFuncResult
-
-  // let evaluateStep (handler : RequestHandler) next (ctx : EventContext) : EventFuncResult =
-  //   async {
-  //     match! next ctx with
-  //     | Some ctx -> return! handler next ctx
-  //     | None -> return! skipPipeline
-  //   }
-
-  // handles application registration & sends a `RegisterPlugin` event to streamdeck application.
-  let handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
-    let register = Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
-    !! "Creating registration event of {event}"
-    >>!+ ("event", register)
-    |> logger.info
-    let sendEvent = Sent.EventSent.RegisterPlugin register
-    sendEvent.Encode None None //context or device not needed for this event.
-
-  // handles the raw json message from the web socket
-  let socketMsgHandlerR (msg : string) (routes: Core.EventHandler) = asyncResult {
+  /// <summary>
+  /// Handles an individual message by decoding it to an <see cref="Types.EventMetada" /> instance and passing it to the
+  /// given <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />). This returns an error
+  /// if the given message was not able to be decoded into <see cref="Types.EventMetadata" /> instance.
+  /// </summary>
+  /// <remarks>
+  /// This function is useful if you have established your own way of receiving raw event messages from the Stream Deck application
+  /// but want to hook into event routing and have the message processed by the Event Handler.
+  /// </remarks>
+  /// <param name="routes">The <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />) that will process incoming events.</param>
+  /// <param name="msg">The raw incoming message from the Stream Deck application.</param>
+  let socketMsgHandler (routes: Core.EventHandler) (msg : string) = asyncResult {
     //first decode into an EventMetadata
     !! "Decoding event metadata from msg '{msg}'"
     >>!- ("msg", msg)
@@ -233,34 +235,58 @@ module internal Engine =
     |> logger.info
     //then build the context
     let ctx = EventContext(eventMetadata)
-    
-    //now match the context to the known routes
+
     let initHandler = fun ctx -> AsyncOption.retn ctx
 
     !! "Beginning Event Handling" |> logger.trace
 
+    //now match the context to the known routes
     match! routes initHandler ctx with
     | Some ctx ->
-      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventReceived) |> logger.trace
+      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventName) |> logger.trace
       return ctx
     | None ->
-      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventReceived) |> logger.warn
+      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventName) |> logger.warn
       return ctx
   }
 
-  let socketMsgHandler (routes: Core.EventHandler) (msg : string) = async {
-    let! r = socketMsgHandlerR msg routes
+  let private forceMessageHandling (routes: Core.EventHandler) (msg : string) = async {
+    let! r = socketMsgHandler routes msg
     match r with
     | Ok x -> return x
-    | Error e -> return failwithf "%A" e
+    | Error e ->
+      !! "Received Error {e} when handling msg {msg}"
+      >>!+ ("e", e) >>!+ ("msg", msg)
+      |> logger.error
+      return failwithf "%A" e
   }
 
-[<AutoOpen>]
-module Client =
-  open Engine
+  // handles application registration & sends a `RegisterPlugin` event to streamdeck application.
+  let private handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
+    let register = Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
+    !! "Creating registration event of {event}"
+    >>!+ ("event", register)
+    |> logger.info
+    let sendEvent = Sent.EventSent.RegisterPlugin register
+    sendEvent.Encode None None
 
+  /// <summary>
+  /// Creates a new instance of the Stream Deck Client with the args and routes given.
+  /// </summary>
+  /// <param name="args">The args required to connect to the Stream Deck application.</param>
+  /// <param name="handler">The <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />) that will process incoming events.</param>
+  /// <example>
+  /// <code>
+  /// let main args =
+  ///     let routes = choose [
+  ///         KEY_DOWN >=> Core.log "In KEY_DOWN handler"
+  ///     ]
+  ///     let client = StreamDeckClient(args, routes)
+  ///     client.Run()
+  /// </code>
+  /// </example>
   type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
-    let msgHandler = socketMsgHandler handler
+    let msgHandler = forceMessageHandling handler
     let registerHandler = handleSocketRegister args
 
     let _socket = Websockets.StreamDeckConnection(args, msgHandler, registerHandler)

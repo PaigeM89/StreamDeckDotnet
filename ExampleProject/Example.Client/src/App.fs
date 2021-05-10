@@ -22,6 +22,7 @@ module Websockets =
 
     //https://github.com/fable-compiler/fable-browser/blob/master/src/WebSocket/Browser.WebSocket.fs
     
+    // messageHandler : string -> unit
     type Websocket(port : int, uuid: System.Guid, messageHandler : string -> unit) =
         let mutable msgQueue : string list = []
         let wsref : WebSocket option ref = ref None
@@ -46,6 +47,7 @@ module Websockets =
                         Dom.window.setTimeout
                             ((fun () -> connect timeout server), timeout, ()) |> ignore
                     socket.onmessage <- fun e ->
+                        printfn "socket.onmessage was called"
                         Json.tryParseNativeAs(string e.data)
                         |> function
                             | Ok msg ->
@@ -59,8 +61,7 @@ module Websockets =
             | Some ws -> 
                 printfn "Socket state is %A" ws.readyState
             | None -> printfn "socket is none"
-            ()
-        
+
         do createWebsocket()
 
         member this.IsOpen() =
@@ -90,6 +91,7 @@ module Models =
         Info : string
         ActionInfo : string
         Websocket : Websockets.Websocket option
+        // LastMessage : string
     } with
         static member Empty() = {
             Port = 0
@@ -110,6 +112,8 @@ module Models =
     | SendToSocket of toSend : Types.ClientSendEvent
     //| TestExternalMessage of count : int
     | UpdatePort of port : int
+    //| WebsocketReceive of raw : string
+    // | ModelChange
 
 module Updates =
     open Models
@@ -118,7 +122,8 @@ module Updates =
         let registerEvent = 
             Types.PropertyInspectorRegisterEvent.Create model.PropertyInspectorUUID
             |> Types.ClientSendEvent.PiRegisterEvent
-        model, Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
+        // model, 
+        Cmd.ofMsg (Models.Msg.SendToSocket registerEvent)
 
     // let sendRegisterEventFunc (model : Model) () =
     //     let registerEvent = 
@@ -133,8 +138,11 @@ module Updates =
         printfn "Message: %s" msg
 
     /// Recieves the pure string from the web socket, decodes it, and handles it
-    let msgHandler msg =
-        let decoded = 
+    // let msgHandler msg =
+    //     let decoded = 
+
+    // let msgHandler model =
+    //     Cmd.ofMsg Models.Msg.ModelChange
 
 
     let update (msg:Msg) (model: Model) : (Model * Cmd<Models.Msg>)=
@@ -148,7 +156,7 @@ module Updates =
         | SendToSocket toSend ->
             printfn "Sending to socket: %A" toSend
             match model.Websocket with
-            | None -> model, Cmd.none // silently fail because yay
+            | None -> model, Cmd.none // silently fail because there's no good way to log any of this
             | Some ws ->
                 let encoded = toSend.Encode()
                 printfn "encoded payload being sent is %s" encoded
@@ -178,6 +186,10 @@ module View =
             div [ sdpiItem] [
                 details [ msgClass ] [ 
                     summary [] [ str (sprintf "Plugin UUID is %s" (model.PropertyInspectorUUID.ToString("N")))]
+                    if model.Websocket.IsSome then
+                        summary [] [ str "Model web socket is instantiated" ]
+                    else
+                        summary [] [ str "Model does not have a web socket" ]
                 ]
             ]
         ]
@@ -191,7 +203,7 @@ let startApp (initialModel : Models.Model) =
             View.view
     |> Program.withConsoleTrace
     //attempt to register the plugin after 3 seconds
-    |> Program.withSubscription Updates.sendRegisterEventSub
+    |> Program.withSubscription Updates.sendRegisterEvent
     |> Program.withReactBatched "elmish-app"
     |> Program.runWith initialModel
 

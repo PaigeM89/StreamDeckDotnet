@@ -1,10 +1,10 @@
-FSharp.Control.WebSockets
-Argu
-Thoth.Json.Net
-FsToolkit.ErrorHandling
 File:FsLibLog.fs
 
 group Tools
 Spectre.Console
 Fake.Core.Target
 Fake.DotNet.Cli
+FSharp.Control.WebSockets
+Argu
+Thoth.Json.Net
+FsToolkit.ErrorHandling

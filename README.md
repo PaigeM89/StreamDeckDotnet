@@ -2,11 +2,14 @@
 
 **Notes To Self**
 
-Plugins live in `~/Library/Application Support\com.elgato.StreamDeck/Plugins/`
+Plugins live in `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
 
 Logs live in `~/Library/Logs/StreamDeck/`
 
 Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
+
+Debug a property inspector [from this link](http://localhost:23654) - 
+  see [this link](https://developer.elgato.com/documentation/stream-deck/sdk/create-your-own-plugin/) from elgato for more info
 
 elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
 
@@ -14,27 +17,46 @@ routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=
 
 https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
 
-
+Interesting log when exiting the stream deck application:
+```
+07:32:45.0706          void ESDCustomPlugin::QuitPlugin(): Plugin 'Example Plugin' is still alive after closing the websocket. Quit it.
+```
 
 # TODO
 
+## General
+
+* Test w/ software
+* Test w/ streamdeck
+
+## Example
+
+[ ] Figure out websockets in Elmish
+    * maybe try (Fable.Reaction)[https://fablereaction.readthedocs.io/en/latest/fable.reaction/getting_started.html] ?
+    * maybe the model shouldn't be aware of the socket? this might make building a subscription easier, since the socket can invoke it by updating the model. i think.
+[ ] And/Or Redo the example in react
+
 ## Mimic
 
-* Set action coordinates
-* batch send events via queue to stress test a plugin
-* test multi instance & combine with batch send
+[ ] Set action state
+[ ] Set action coordinates
+[ ] Batch send events with delays
+  * allows testing "double tap key" event types (as an example)
+  * allows stress testing
+[ ] test multi instance & combine with batch send
+[ ] Save last command run
+[ ] Save/cache commands to run later 
+[ ] Load manifest(s) for actions
+[ ] Figure out packaging/distribution for consuming
+[ ] Figure out how to host the property inspector as well
+    * [ ] Tie the plugin & the backend together
 
 ## SD.NET
 
-* finish implementing all event types
-  * [x] payloads
-  * [x] encoding
-  * [x] decoding
-    * [x] trybind functions
-    * [x] routing helpers
-    * [x] Actual decoding in the context
+* [ ] Event name not actually being set in the context (see log on line 236 of routing.fs)
+* [ ] Minimize deploy size, either as part of this package and/or as an example
 * Do we need some way to send events outside of handling events? eg, timer?
-* Should event binding bind to context, too? 
+* Should event binding bind to context, too?
 * What all can fit in Fable to make a pure front-end plugin?
 
 ## Documetnation
