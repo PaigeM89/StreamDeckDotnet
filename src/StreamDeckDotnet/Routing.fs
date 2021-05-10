@@ -16,19 +16,29 @@ module Routing =
   module private PayloadRouting = 
     let multiAction() = true
 
-    //todo: state router
-    let inline contextState (stateCheck : EventContext -> bool) errorHandler successHandler =
-      fun next ctx ->
-        if stateCheck ctx then
-          successHandler next ctx
-        else
-          errorHandler next ctx
-
   /// Accepts a function that takes the action context and validates if the action route is valid.
   /// TODO
   let private appState (stateCheck: EventContext -> bool) =
     fun next ctx ->
       next ctx
+
+  /// Checks the `stateCheck` function before running the success handler.
+  /// Will run the error handler on failure.
+  let inline contextStateWithError (stateCheck : EventContext -> bool) errorHandler successHandler =
+    fun next ctx ->
+      if stateCheck ctx then
+        successHandler next ctx
+      else
+        errorHandler next ctx
+
+  /// Checks the `stateCheck` function before running the success handler.
+  /// Will skip the pipeline on a failure.
+  let inline contextState (stateCheck : EventContext -> bool) successHandler =
+    fun next ctx ->
+      if stateCheck ctx then
+        successHandler next ctx
+      else
+        skipPipeline
 
   /// Tries to bind the event received in the context using the given match function.
   let matcher matchFunc =
@@ -205,7 +215,8 @@ module Client =
 
   /// <summary>
   /// Handles an individual message by decoding it to an <see cref="Types.EventMetada" /> instance and passing it to the
-  /// given <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />).
+  /// given <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />). This returns an error
+  /// if the given message was not able to be decoded into <see cref="Types.EventMetadata" /> instance.
   /// </summary>
   /// <remarks>
   /// This function is useful if you have established your own way of receiving raw event messages from the Stream Deck application
@@ -232,10 +243,10 @@ module Client =
     //now match the context to the known routes
     match! routes initHandler ctx with
     | Some ctx ->
-      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventReceived) |> logger.trace
+      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventName) |> logger.trace
       return ctx
     | None ->
-      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventReceived) |> logger.warn
+      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventName) |> logger.warn
       return ctx
   }
 
@@ -257,7 +268,7 @@ module Client =
     >>!+ ("event", register)
     |> logger.info
     let sendEvent = Sent.EventSent.RegisterPlugin register
-    sendEvent.Encode None None 
+    sendEvent.Encode None None
 
   /// <summary>
   /// Creates a new instance of the Stream Deck Client with the args and routes given.

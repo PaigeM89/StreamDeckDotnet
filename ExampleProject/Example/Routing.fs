@@ -31,24 +31,47 @@ module Routing =
     timerHistory <- m
 
   let keyDownHandler (keyPayload : KeyPayload) next (ctx : EventContext) = async {
+    !! "In key down handler of example plugin, attempting to extract settings value" |> logger.info
     //todo: add type, deserialize Settings to that type
     let duration : obj = keyPayload.Settings.Value("duration")
-    match ctx.TryGetContextGuid()with
-    | Some contextId ->
-      match duration with
-      | :? int64 as dur ->
+    !! "in example plugin key down handler, just grabbed value '{val}' from key payload settings"
+    >>!+ ("val", duration)
+    |> logger.info
+    match duration with
+    | null ->
+      ctx.AddLog $"Did not finder timer data in message"
+      return! next ctx
+    | :? int64 as dur ->
+      match ctx.TryGetContextGuid() with
+      | Some contextId ->
         ctx.AddLog $"Received timer duration of %A{dur} for context %A{contextId}"
         updateTimers (contextId, dur)
         ctx.AddOk()
         return! next ctx
-      | _ ->
-        ctx.AddLog $"Received timer duration of %A{duration} for context %A{contextId} but was unable to cast it to an int64."
+      | None ->
+        ctx.AddLog $"Received timer duration of %A{duration} but with unparsable or missing context id. Metadata: %A{ctx.EventMetadata}"
         ctx.AddAlert()
         return! next ctx
-    | None ->
-      ctx.AddLog $"Received timer duration of %A{duration} but with unparsable or missing context id. Metadata: %A{ctx.EventMetadata}"
+    | _ ->
+      ctx.AddLog $"Received timer duration of %A{duration} but was unable to cast it to an int64."
       ctx.AddAlert()
       return! next ctx
+    // match ctx.TryGetContextGuid() with
+    // | Some contextId ->
+    //   match duration with
+    //   | :? int64 as dur ->
+    //     ctx.AddLog $"Received timer duration of %A{dur} for context %A{contextId}"
+    //     updateTimers (contextId, dur)
+    //     ctx.AddOk()
+    //     return! next ctx
+    //   | _ ->
+    //     ctx.AddLog $"Received timer duration of %A{duration} for context %A{contextId} but was unable to cast it to an int64."
+    //     ctx.AddAlert()
+    //     return! next ctx
+    // | None ->
+    //   ctx.AddLog $"Received timer duration of %A{duration} but with unparsable or missing context id. Metadata: %A{ctx.EventMetadata}"
+    //   ctx.AddAlert()
+    //   return! next ctx
   }
 
   let myAction (event : EventReceived) (next: EventFunc) (ctx : EventContext) = async {
@@ -70,6 +93,7 @@ module Routing =
   let routes : EventRoute = choose [
     KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyDownHandler
     WILL_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
+    KEY_UP >=> Core.log "In KEY_UP handler"
     // This will flood the logs
     Core.logWithContext "Unsupported event type" >=> showAlert
   ]
