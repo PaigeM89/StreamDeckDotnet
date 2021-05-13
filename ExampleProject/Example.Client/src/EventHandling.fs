@@ -1,6 +1,6 @@
 namespace Example.Client
 
-open StreamDeckDotnet
+// open StreamDeckDotnet
 
 module EventHandling = 
 

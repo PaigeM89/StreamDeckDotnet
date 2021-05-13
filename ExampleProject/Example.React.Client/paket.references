@@ -3,3 +3,6 @@ Thoth.Json
 Fable.Core
 Fable.React
 Feliz
+Fable.SimpleJson
+Fable.Browser.Dom
+Fable.Browser.WebSocket

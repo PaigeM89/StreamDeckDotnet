@@ -13,7 +13,7 @@ module.exports = {
     //     filename: "bundle.js",
     // },
     output: {
-        path: resolve('./output'),
+        path: resolve('./public'),
         filename: 'bundle.js',
         libraryTarget: 'var',
         library: 'EntryPoint'

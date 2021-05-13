@@ -109,8 +109,12 @@ group Fable
     nuget Fable.React
     nuget Feliz
     nuget Fable.Browser.Dom ~> 2
+    nuget Fable.Browser.WebSocket
     nuget Fable.Elmish.React
-    nuget Elmish.Bridge.Client ~> 3
+    # nuget Elmish.Bridge.Client ~> 3
+    nuget Fable.Websockets.Elmish
+    nuget Fable.Websockets.Client
+    nuget Fable.SimpleJson
 
 // package resolution packages
 // not directly needed but paket sometimes needs a hand
