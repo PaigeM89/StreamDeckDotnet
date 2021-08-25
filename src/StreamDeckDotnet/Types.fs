@@ -9,6 +9,10 @@ module internal Encode =
   open Thoth.Json.Net
 #endif
 
+  /// Encodes a guid in a way the streamdeck will read it, because the stream deck application
+  /// apparently does string matching instead of anything correct.
+  let encodeGuid (g : Guid) = g.ToString("N").ToUpperInvariant()
+
   /// Encodes the value of the string, or an empty string
   let stringOption so =
     so |> Option.defaultValue "" |> Encode.string
@@ -103,12 +107,12 @@ module Types =
       return targetType payload
     }
 
-  /// Stores all data & metadata relevant to an event recieved by streamdeck. 
+  /// Stores all data & metadata relevant to an event recieved by streamdeck.
   /// Events to send back to streamdeck are stored in the context and are sent after the event is fully processed.
   type EventMetadata = {
     /// The URI of the Action. Eg, "com.elgato.example.action"
     Action : string option
-    
+
     /// A string describing the event, eg "didReceiveSettings"
     Event : string
 
@@ -116,14 +120,14 @@ module Types =
     /// This identifies the specific button being pressed for a given action,
     /// which is relevant for actions that allow multiple instances.
     Context : string option
-    
+
     /// A unique, opaque, non-controlled ID for the device that is sending or receiving the action.
     Device : string option
 
     /// The raw JSON describing the payload for this event.
     Payload : string option
   } with
-      static member Decoder : Decoder<EventMetadata> = 
+      static member Decoder : Decoder<EventMetadata> =
         Decode.object (fun get -> {
           Action = get.Optional.Field "action" Decode.string
           Event = get.Required.Field "event" Decode.string
@@ -131,7 +135,7 @@ module Types =
           Device = get.Optional.Field "device" Decode.string
           Payload = get.Optional.Field "payload" Decode.string
         })
-  
+
   /// Creates a new `EventMetadata` that is built from decoding the given string, or returns an error message on decode failure.
   let decodeEventMetadata (str : string) =
     Decode.fromString EventMetadata.Decoder str
@@ -223,7 +227,7 @@ module Types =
 
     /// Wrapper for the `KeyPayload` to encode correctly between keydown and keyup event types.
     /// This wrapper should be nearly transparent to most calling cases.
-    type KeyPayloadDU = 
+    type KeyPayloadDU =
     | KeyDown of KeyPayload
     | KeyUp of KeyPayload
     with
@@ -284,7 +288,7 @@ module Types =
       State : int
       IsInMultiAction : bool
     } with
-      static member Decoder : Decoder<AppearPayload> = 
+      static member Decoder : Decoder<AppearPayload> =
         Decode.object (fun get -> {
           Settings = get.Required.Field "settings" Decode.string |> JObject
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
@@ -292,7 +296,7 @@ module Types =
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
 
-      member this.Encode context device = 
+      member this.Encode context device =
         let payload = [
           "settings", Encode.string (this.Settings.ToString())
           "coordinates", Encode.object (this.Coordinates.Encode())
@@ -324,7 +328,7 @@ module Types =
           TitleColor = get.Optional.Field "titleColor" Decode.string
         })
 
-      member this.Encode() = 
+      member this.Encode() =
         [
           "fontFamily", Encode.stringOption this.FontFamily
           "fontSize", Encode.int this.FontSize
@@ -380,13 +384,13 @@ module Types =
         ]
 
     /// The possible device types.
-    type DeviceType = 
+    type DeviceType =
     | StreamDeck = 0
     | StreamDeckMini = 1
     | StreamDeckXL = 2
     | StreamDeckMobile = 3
     | CorsairGKeys = 4
-    
+
     /// Convert an integer value to a `DeviceType`. All unknown values are defaulted to a `StreamDeck`.
     let DeviceTypeFromInt v : DeviceType =
         match v with
@@ -562,7 +566,7 @@ module Types =
             payload.Encode context device |> Encode.toString 0
           | KeyUp payload ->
             payload.Encode context device |> Encode.toString 0
-          | DidReceiveSettings payload -> 
+          | DidReceiveSettings payload ->
             payload.Encode context device |> Encode.toString 0
           | DidReceiveGlobalSettings payload ->
             payload.Encode context device |> Encode.toString 0
@@ -574,7 +578,7 @@ module Types =
             payload.Encode context device |> Encode.toString 0
           | DeviceDidConnect payload ->
             payload.Encode context device |> Encode.toString 0
-          | DeviceDidDisconnect -> 
+          | DeviceDidDisconnect ->
             encodeWithoutPayload context device  EventNames.DeviceDidDisconnect|> Encode.toString 0
           | ApplicationDidLaunch payload ->
             payload.Encode context device |> Encode.toString 0
@@ -600,7 +604,7 @@ module Types =
     | HardwareAndSoftware = 0
     | Hardware = 1
     | Software = 2
-    
+
     let private TargetToInt (t : Target) =
       match t with
       | Target.HardwareAndSoftware -> 0
@@ -622,7 +626,7 @@ module Types =
             "message", Encode.string (string this.Message)
           ]
           encodeWithWrapper context device "logMessage" payload
-    
+
         static member Decoder : Decoder<LogMessagePayload> =
           Decode.object (fun get -> {
             Message = get.Required.Field "message" Decode.string
@@ -635,7 +639,7 @@ module Types =
       member this.Encode() =
         Encode.object [
           "event", Encode.string this.Event
-          "uuid", Encode.guid this.PluginGuid 
+          "uuid", Encode.string (this.PluginGuid.ToString("N").ToUpperInvariant())
         ]
       static member Create event id =
         {
@@ -687,7 +691,7 @@ module Types =
       /// If None, the title will apply to all states of the action.
       State : int option
     } with
-      member this.Encode context device = 
+      member this.Encode context device =
         [
           "image", Encode.string this.Image
           "target", Encode.int (this.Target |> TargetToInt)
@@ -719,18 +723,18 @@ module Types =
     type SwitchToProfilePayload = {
       Profile : string
     } with
-      member this.Encode context device = 
+      member this.Encode context device =
         [
           "profile", Encode.string this.Profile
         ]
         |> encodeWithWrapper context device EventNames.SwitchToProfile
-      
+
       static member Decoder : Decoder<SwitchToProfilePayload> =
         Decode.object(fun get -> {
           Profile = get.Required.Field "profile" Decode.string
         })
 
-    
+
 
     /// Events sent from this plugin to the stream deck application.
     type EventSent =
@@ -757,7 +761,7 @@ module Types =
     /// <remarks>
     /// This can also be set via the Property Inspector. Setting this will send a `DidReceiveGlobalSettings` event
     /// to the Property Inspector.
-    /// 
+    ///
     /// These settings will be saved to the Keychain on macOS and to the Cerdential Store on Windows. This is useful for storing a shared token,
     /// for example.
     /// </remarks>

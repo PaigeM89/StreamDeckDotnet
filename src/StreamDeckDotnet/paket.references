@@ -6,4 +6,5 @@ Thoth.Json.Net
 FsToolkit.ErrorHandling
 FSharp.Control.WebSockets
 Serilog
+Argu
 File:FsLibLog.fs

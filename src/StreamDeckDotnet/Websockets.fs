@@ -1,6 +1,7 @@
 namespace StreamDeckDotnet
 
 open System
+open System.IO
 open System.Text
 open System.Net.WebSockets
 open System.Threading
@@ -33,28 +34,27 @@ module Websockets =
 
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
-  type StreamDeckConnection(args : StreamDeckSocketArgs, 
+  type StreamDeckConnection(args : StreamDeckSocketArgs,
                             receiveHandler : string -> Async<Context.EventContext>,
                             registrationHandler : unit -> string) =
 
-      
       // https://github.com/TheAngryByrd/FSharp.Control.WebSockets/blob/master/src/FSharp.Control.Websockets/FSharp.Control.Websockets.fs
-      let mutable _tsWebsocket : ThreadSafeWebSocket = 
+      let mutable _tsWebsocket : ThreadSafeWebSocket =
         ThreadSafeWebSocket.createFromWebSocket (new ClientWebSocket())
 
       let _isOpen() = WebSocket.isWebsocketOpen _tsWebsocket.websocket
       let _isClosed() = WebSocket.isWebsocketOpen _tsWebsocket.websocket |> not
 
       let _cancelSource = new CancellationTokenSource()
-      
+
       // https://docs.microsoft.com/en-us/dotnet/api/system.threading.semaphoreslim?view=net-5.0
       let _semaphore = new SemaphoreSlim(1)
       let port = args.Port
 
-      let lockAsync() = 
+      let lockAsync() =
         !! "Locking socket" |> logger.info
         _semaphore.WaitAsync() |> Async.AwaitTask
-      let release() = 
+      let release() =
         !! "Unlocking socket" |> logger.info
         _semaphore.Release() |> ignore
 
@@ -76,7 +76,7 @@ module Websockets =
 
       // let eventsEncoded (ctx : Context.EventContext) =
       //   ctx.GetEventsToSend()
-      //   |> List.map (fun payloads -> 
+      //   |> List.map (fun payloads ->
       //     let payload = payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
       //     !! "Created event sent payload of {payload}"
       //     >>!- ("payload", payload)
@@ -84,12 +84,18 @@ module Websockets =
       //     payload
       //   )
 
-      let awaitAsyncReceive () =
-        !! "calling ts websocket receive message as utf8" |> logger.trace
-        ThreadSafeWebSocket.receiveMessageAsUTF8 _tsWebsocket
+      let awaitAsyncReceive () = async {
+        !! "calling ts websocket receive message as utf8. Socket state is {state}"
+        >>!+ ("state", _tsWebsocket.State)
+        |> logger.trace
+        // let writeStream = new MemoryStream()
+        // ThreadSafeWebSocket.receiveMessage _tsWebsocket WebSocket.DefaultBufferSize WebSocketMessageType.Text writeStream
+
+        return! ThreadSafeWebSocket.receiveMessageAsUTF8 _tsWebsocket
+      }
 
       //splitting this into a separate function allows for better error logging
-      let closeSocket = 
+      let closeSocket () =
         !! "In close socket function" |> logger.trace
         async {
           let! result = ThreadSafeWebSocket.close _tsWebsocket WebSocketCloseStatus.NormalClosure "Closing web socket"
@@ -101,7 +107,7 @@ module Websockets =
             !! "Error closing thread safe web socket: {err}"
             >>!+ ("err", e)
             |> logger.error
-          
+
           return ()
         }
 
@@ -111,7 +117,7 @@ module Websockets =
             >>!+ ("state", _tsWebsocket.State)
             |> logger.debug
             !! "Closing socket" |> logger.info
-            do! closeSocket
+            do! closeSocket()
             !! "Disposing socket" |> logger.debug
             _tsWebsocket.websocket.Dispose()
             !! "Initializing new websocket" |> logger.trace
@@ -127,13 +133,11 @@ module Websockets =
           try
             if _isOpen() then
               !! "Sending {text} to socket" >>!- ("text", text) |> logger.info
-              let! sendResult =
-                ThreadSafeWebSocket.sendMessageAsUTF8
-                  _tsWebsocket
-                  text
+              let! sendResult = ThreadSafeWebSocket.sendMessageAsUTF8 _tsWebsocket text
 
               match sendResult with
-              | Ok _ -> ()
+              | Ok _ ->
+                !! "Message sent to web socket!" |> logger.trace
               | Error e ->
                 !! "Error sending to thread safe websocket: {err}"
                 >>!+("err", e)
@@ -163,6 +167,18 @@ module Websockets =
               let! msg = awaitAsyncReceive()
               !! "After await async receive in core loop" |> logger.trace
               match msg with
+              // | Ok (WebSocket.ReceiveStreamResult.Stream stream) ->
+              //   !! "Initializing stream reader from websocket receive stream" |> logger.trace
+              //   use reader = new StreamReader(stream)
+              //   let msg = reader.ReadToEnd()
+              //   !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
+              //   let! ctx = receiveHandler (msg)
+              //   do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
+              // | Ok (WebSocket.ReceiveStreamResult.Closed (status, description)) ->
+              //   !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
+              //   >>!+ ("status", status)
+              //   >>!- ("desc", description)
+              //   |> logger.error
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
                 !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
                 let! ctx = receiveHandler (msgText)
@@ -186,7 +202,7 @@ module Websockets =
           !! "Exiting receive loop due to socket closure" |> logger.trace
         }
 
-      member this.RunAsync() = 
+      member this.RunAsync() =
         let fin = async {
             !! "Finishing async work, disposing socket" |> logger.trace
             do! this.DisconnectAsync()
@@ -198,7 +214,7 @@ module Websockets =
               !! "Websocket is not open after starting" |> logger.trace
               ()
             else
-              !! "Web socket successfully connected in state {state}, sending registration response." 
+              !! "Web socket successfully connected in state {state}, sending registration response."
               >>!+ ("state", _tsWebsocket.State)
               |> logger.trace
               let response = registrationHandler()
