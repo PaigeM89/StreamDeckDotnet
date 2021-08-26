@@ -55,7 +55,7 @@ module Core =
 
   /// Iterates through a list of <see cref="EventHandler" /> functions and returns the first <see cref="EventFuncResult" />
   /// of which the option is Some.
-  let choose (handlers : EventHandler list) : EventHandler = 
+  let choose (handlers : EventHandler list) : EventHandler =
     fun (next : EventFunc) ->
       let funcs = handlers |> List.map (fun h -> h next)
       fun (ctx : Context.EventContext) -> chooseEventFunc funcs ctx
@@ -65,7 +65,7 @@ module Core =
   /// `errorHandler` will process the error and return the <see cref="EventHandler" />.
   let tryBindEvent (errorHandler : PipelineFailure -> EventHandler) (successHandler : Received.EventReceived -> EventHandler) : EventHandler =
     fun (next : EventFunc) (ctx: EventContext) -> async {
-      let! result = ctx.TryBindEventAsync
+      let! result = ctx.TryBindEventAsync()
       match result with
       | Ok event -> return! successHandler event next ctx
       | Error err -> return! errorHandler err next ctx
@@ -151,14 +151,14 @@ module Core =
 
   /// Add an event for the action to show an "Ok" symbol, then continues processing.
   let showOk = fun (next : EventFunc) ctx -> addShowOk ctx |> next
-  
+
   /// Add an event for the action to show an "Alert" symbol, then continues processing.
   let showAlert = fun (next : EventFunc) ctx -> addShowAlert ctx |> next
 
   /// Flow the event handler to the next function, ignoring the passed function
   let flow (_ : EventFunc) (ctx: EventContext) = Context.lift ctx
 
-module ArgsParsing = 
+module ArgsParsing =
   open System
   open Argu
   open StreamDeckDotnet.Websockets
@@ -188,7 +188,7 @@ module ArgsParsing =
     try
       Log.setMessage "Creating args parser" |> logger.trace
       let argsParser = ArgumentParser.Create<Arguments>(programName = "StreamDeckDotnetPlugin.exe")
-      
+
       Log.setMessage "Parsing args" |> logger.trace
       let results = argsParser.ParseCommandLine args
 

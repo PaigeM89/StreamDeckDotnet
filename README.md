@@ -1,28 +1,70 @@
 # StreamDeckDotnet
 
-**Notes To Self**
+`StreamDeckDotnet` is a full framework for handling communication with an Elgato Stream Deck. It uses a Giraffe-like pipeline builder for simple, readable, and concise event pipelines.
+
+Events are handled in a pipeline with filters:
+
+```Fsharp
+open StreamDeckDotnet
+open StreamDeckDotnet.Routing.EventBinders
+open StreamDeckDotnet.Types.Received
+
+let routes : EventRoute = choose [
+    // functions can be added to the pipeline, like this logging function,
+    // which appends a log to the context's events to send back to the Stream Deck
+    KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyDownHandler
+    WILL_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
+  ]
+```
+
+`tryBindKeyDownEvent` will bind the payload from a `KEY_DOWN` event and pass that to the given handler, allowing you to skip right to the parts you care about. 
+
+The handler also gets an `EventContext`, which it writes outbound events to and can peek at event metadata when needed.
+
+```Fsharp
+let keyDownHandler (keyPayload : KeyPayload) next (ctx : EventContext) = async {
+  match ctx.TryGetContextGuid() with
+  | Some contextId ->
+    // helper functions allow for chaining
+    let ctx = ctx |> addLogToContext $"In Key Down Handler for context %O{contextId}" |> addShowOk
+    return! next ctx
+  | None ->
+    // The context itself is an object, so it can have fields modified.
+    ctx.AddLog($"In key down handler, no context was found")
+    ctx.AddAlert()
+    return! next ctx
+}
+```
+
+Creating the stream deck itself only requires the application arguments and the routes:
+
+```Fsharp
+[<EntryPoint>]
+let main argv =
+  let args = ArgsParsing.parseArgs argv
+  let client = StreamDeckClient(args, routes)
+  client.Run()
+```
+
+## Testing and developing a plugin
+
+On macOS:
 
 Plugins live in `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
-
 Logs live in `~/Library/Logs/StreamDeck/`
 
-Based on (this project)[https://github.com/TyrenDe/streamdeck-client-csharp/blob/master/streamdeck-client-csharp/StreamDeckConnection.cs]
-
 Debug a property inspector [from this link](http://localhost:23654) - 
-  see [this link](https://developer.elgato.com/documentation/stream-deck/sdk/create-your-own-plugin/) from elgato for more info
+  See [this link](https://developer.elgato.com/documentation/stream-deck/sdk/create-your-own-plugin/) from elgato for more info
 
 elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
 
-routing: https://docs.microsoft.com/en-us/aspnet/core/fundamentals/routing?view=aspnetcore-5.0#routing-basics
 
-https://stackoverflow.com/questions/53997440/how-to-expose-f-modules-public-functions-to-javascript-via-fable
+# TODO
 
 Interesting log when exiting the stream deck application:
 ```
 07:32:45.0706          void ESDCustomPlugin::QuitPlugin(): Plugin 'Example Plugin' is still alive after closing the websocket. Quit it.
 ```
-
-# TODO
 
 ## General
 
@@ -62,7 +104,6 @@ Interesting log when exiting the stream deck application:
 ## Documetnation
 
 * start
-
 
 ---
 

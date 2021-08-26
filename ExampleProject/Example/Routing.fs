@@ -3,7 +3,7 @@ namespace ExampleProject
 open System
 
 open StreamDeckDotnet
-open StreamDeckDotnet.Routing.EventBinders
+open StreamDeckDotnet.EventBinders
 open StreamDeckDotnet.Types.Received
 
 open StreamDeckDotnet.Logging
@@ -14,64 +14,57 @@ module Routing =
 
   let logger = LogProvider.getLoggerByName("StreamDeckDotnet.Routing")
 
+  type Timer =
+  | Started of startTime : System.DateTimeOffset
+  | Completed of duration : System.TimeSpan
+
   /// A map of the timer history for each action instance
-  type Timers = Map<Guid, int64 list> 
+  type Timers = Map<Guid, Timer list> // int64 list>
 
   /// The history of all timer values for each action instance
   let mutable timerHistory : Timers = [] |> Map.ofList
 
-  let replace (id, values) m =
-    Map.remove id m
-    |> Map.add id values
+  let replace (id, values) m = Map.add id values m
 
-  let updateTimers (id, newValue) =
-    let existing = timerHistory.TryFind id |> Option.defaultValue []
-    let newTimers = newValue :: existing
-    let m = replace (id, newTimers) timerHistory
+  let updateTimers (id, newValues) =
+    //let existing = timerHistory.TryFind id |> Option.defaultValue []
+    // let newTimers = newValue :: existing
+    // let m = replace (id, newTimers) timerHistory
+    let m = Map.add id newValues timerHistory
     timerHistory <- m
 
   let keyDownHandler (keyPayload : KeyPayload) next (ctx : EventContext) = async {
     !! "In key down handler of example plugin, attempting to extract settings value" |> logger.info
-    //todo: add type, deserialize Settings to that type
-    let duration : obj = keyPayload.Settings.Value("duration")
-    !! "in example plugin key down handler, just grabbed value '{val}' from key payload settings"
-    >>!+ ("val", duration)
-    |> logger.info
-    match duration with
-    | null ->
-      ctx.AddLog $"Did not finder timer data in message"
+    match ctx.TryGetContextGuid() with
+    | Some contextId ->
+      match Map.tryFind contextId timerHistory with
+      | Some ((Timer.Started startDto) :: xs) ->
+        let now = DateTimeOffset.UtcNow
+        let diff = now - startDto
+        let newValues = Completed diff :: xs
+        updateTimers (contextId, newValues)
+      | Some (x :: xs) ->
+        let start = DateTimeOffset.UtcNow
+        let newValues = Started start :: (x :: xs)
+        updateTimers (contextId, newValues)
+      | None
+      | Some [] ->
+        let start = DateTimeOffset.UtcNow
+        let newValues = [Started start]
+        updateTimers (contextId, newValues)
+    | None -> ()
+    return! next ctx
+  }
+
+  let simpleKeyDownHandler (keyPayload : KeyPayload) next (ctx : EventContext) = async {
+    match ctx.TryGetContextGuid() with
+    | Some contextId ->
+      let ctx = ctx |> addLogToContext $"In Key Down Handler for context %O{contextId}" |> addShowOk
       return! next ctx
-    | :? int64 as dur ->
-      match ctx.TryGetContextGuid() with
-      | Some contextId ->
-        ctx.AddLog $"Received timer duration of %A{dur} for context %A{contextId}"
-        updateTimers (contextId, dur)
-        ctx.AddOk()
-        return! next ctx
-      | None ->
-        ctx.AddLog $"Received timer duration of %A{duration} but with unparsable or missing context id. Metadata: %A{ctx.EventMetadata}"
-        ctx.AddAlert()
-        return! next ctx
-    | _ ->
-      ctx.AddLog $"Received timer duration of %A{duration} but was unable to cast it to an int64."
+    | None ->
+      ctx.AddLog($"In key down handler, no context was found")
       ctx.AddAlert()
       return! next ctx
-    // match ctx.TryGetContextGuid() with
-    // | Some contextId ->
-    //   match duration with
-    //   | :? int64 as dur ->
-    //     ctx.AddLog $"Received timer duration of %A{dur} for context %A{contextId}"
-    //     updateTimers (contextId, dur)
-    //     ctx.AddOk()
-    //     return! next ctx
-    //   | _ ->
-    //     ctx.AddLog $"Received timer duration of %A{duration} for context %A{contextId} but was unable to cast it to an int64."
-    //     ctx.AddAlert()
-    //     return! next ctx
-    // | None ->
-    //   ctx.AddLog $"Received timer duration of %A{duration} but with unparsable or missing context id. Metadata: %A{ctx.EventMetadata}"
-    //   ctx.AddAlert()
-    //   return! next ctx
   }
 
   let myAction (event : EventReceived) (next: EventFunc) (ctx : EventContext) = async {
@@ -95,5 +88,5 @@ module Routing =
     WILL_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
     KEY_UP >=> Core.log "In KEY_UP handler"
     // This will flood the logs
-    Core.logWithContext "Unsupported event type" >=> showAlert
+    Core.logWithContext "Unsupported event type" // >=> showAlert
   ]

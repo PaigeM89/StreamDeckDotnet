@@ -239,7 +239,17 @@ module Client =
 
     let initHandler = fun ctx -> AsyncOption.retn ctx
 
-    !! "Beginning Event Handling" |> logger.trace
+    !! "Beginning Event Handling. Metadata is {meta}."
+    >>!+ ("meta", eventMetadata)
+    |> logger.trace
+
+    match eventMetadata.Payload with
+    | Some payload ->
+      !! "Event metadata payload is {payload}"
+      >>!+ ("payload", (string payload))
+      |> logger.trace
+    | None ->
+      !! "Event metadata did not bind a payload" |> logger.trace
 
     //now match the context to the known routes
     match! routes initHandler ctx with

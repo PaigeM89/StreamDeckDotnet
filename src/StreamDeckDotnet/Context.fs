@@ -10,7 +10,7 @@ module Context =
 
   open StreamDeckDotnet.Logging
   open StreamDeckDotnet.Logger.Operators
-  
+
   let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Context")
 
   /// A failure in the event pipeline to handle an event.
@@ -24,12 +24,12 @@ module Context =
   | NoPayloadForType of eventName : string
   /// Attempted to decode a type that requires a payload, but the payload was not found.
   | PayloadMissing
-  /// A specific event handler (eg, `tryBindKeyDownEvent`) attempted to decode a payload, but 
+  /// A specific event handler (eg, `tryBindKeyDownEvent`) attempted to decode a payload, but
   /// the event received was a different event type.
   | WrongEvent of encounteredEvent : string * expectedEvent : string
 
   /// Checks a given input & result, and generates a `DecodeFailure` if the result is a failure.
-  let inline mapDecodeError<'a> input (res : Result<_, string>) = 
+  let inline mapDecodeError<'a> input (res : Result<_, string>) =
     match res with
     | Ok x -> Ok x
     | Error msg -> DecodeFailure(input, msg) |> Error
@@ -48,17 +48,35 @@ module Context =
   /// Denotes an instance where a decode function may be needed
   type Decoding<'a> =
   /// A function to decode a specific payload, and that payload (if present)
-  | PayloadRequired of decodeFunc : DecodeFunc<'a> * payload : string option
+  //| PayloadRequired of decodeFunc : DecodeFunc<'a> * payload : string option
+  | PayloadRequired of decodeFunc : DecodeFunc<'a> * payload : Thoth.Json.Net.JsonValue option
+  | JsonPayloadRequired of (Thoth.Json.Net.JsonValue -> Result<'a, string>) *  payload : Thoth.Json.Net.JsonValue option
   /// An `EventReceived` that does not require a payload.
   | NoPayloadRequired of EventReceived
 
   /// Decodes with the given function, checking to see if a payload is required and if it is present.
-  let inline decode<'a>  func =
+  let decode<'a> func =
     match func with
     | PayloadRequired (func, payload) ->
       match payload with
-      | Some p -> func p |> mapDecodeError p
+      | Some p ->
+        !! "Attempting to decode payload '{payload}'"
+        >>!+ ("payload", (string payload))
+        |> logger.info
+        p |> string |> func |> mapDecodeError (string p)
       | None -> PayloadMissing |> Error
+    | JsonPayloadRequired (func, payload) ->
+      match payload with
+      | Some p ->
+        !! "Attempting to decode json payload '{payload}'"
+        >>!+ ("payload", (string payload))
+        |> logger.info
+        p |> func |> mapDecodeError (string p)
+      | None -> PayloadMissing |> Error
+    // | PayloadRequiredJT (func, payload) ->
+    //   match payload with
+    //   | Some jt -> func jt |> mapDecodeError jt
+    //   | None -> PayloadMissing |> Error
     | NoPayloadRequired e -> Ok e
 
   /// The metadata associated and generated when an event is sent from StreamDeck.
@@ -72,84 +90,87 @@ module Context =
     member _.EventMetadata = eventMetadata
 
     /// The more specific `EventReceived` that was sent from StreamDeck.
-    /// This is only populated when the event handler pipeline attempts to parse the event metadata event 
+    /// This is only populated when the event handler pipeline attempts to parse the event metadata event
     /// type and payload.
     member _.EventReceived = _eventReceived
 
+    /// The name of the event currently being processed.
     member this.EventName = this.EventMetadata.Event
 
-    /// Attempts to bind the `Event` and `Payload` (if applicable) in the `EventMetadata` to 
+    /// Attempts to bind the `Event` and `Payload` (if applicable) in the `EventMetadata` to
     /// an `EventReceived`. This will automatically match the `Event` to the appropriate type.
-    member _.TryBindEventAsync = asyncResult {
-      let keyPayloadFunc mapper = Types.tryDecodePayload Received.KeyPayloadDU.Decoder mapper
+    member _.TryBindEventAsync() = asyncResult {
+      let keyPayloadFunc mapper = tryDecodePayload KeyPayloadDU.Decoder mapper
       let applicationPayloadFunc mapper = tryDecodePayload ApplicationPayloadDU.Decoder mapper
       let decoder =
         let event = eventMetadata.Event.ToLowerInvariant()
         match event with
         | InvariantEqual EventNames.KeyDown ->
-          let mapper = (fun v -> KeyPayloadDU.KeyDown v |> EventReceived.KeyDown)
+          let mapper = KeyPayloadDU.KeyDown >> EventReceived.KeyDown
           fun p -> decode (PayloadRequired (keyPayloadFunc mapper, p))
         | InvariantEqual EventNames.KeyUp ->
-          let mapper = (fun v -> KeyPayloadDU.KeyUp v |> EventReceived.KeyUp)
+          let mapper = KeyPayloadDU.KeyUp >> EventReceived.KeyUp
           fun p -> decode (PayloadRequired (keyPayloadFunc mapper, p))
         | InvariantEqual EventNames.DidReceiveSettings ->
-          fun p -> 
+          fun p ->
             (tryDecodePayload SettingsPayload.Decoder DidReceiveSettings, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.DidReceiveGlobalSettings ->
-          fun p -> 
+          fun p ->
               (tryDecodePayload GlobalSettingsPayload.Decoder DidReceiveGlobalSettings, p)
               |> PayloadRequired |> decode
         | InvariantEqual EventNames.WillAppear ->
-          fun p -> 
-            (tryDecodePayload AppearPayload.Decoder WillAppear, p)
-            |> PayloadRequired |> decode
+          fun p ->
+            (tryDecodePayloadJson AppearPayload.Decoder WillAppear, p)
+            |> JsonPayloadRequired |> decode
         | InvariantEqual EventNames.WillDisappear ->
-          fun p -> 
+          fun p ->
             (tryDecodePayload AppearPayload.Decoder WillDisappear, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.TitleParametersDidChange ->
-          fun p -> 
+          fun p ->
             (tryDecodePayload TitleParametersPayload.Decoder TitleParametersDidChange, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.DeviceDidConnect ->
-          fun p -> 
+          fun p ->
             (tryDecodePayload DeviceInfoPayload.Decoder DeviceDidConnect, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.DeviceDidDisconnect ->
           fun _ -> decode (NoPayloadRequired DeviceDidDisconnect)
         | InvariantEqual EventNames.ApplicationDidLaunch ->
           fun p ->
-            let mapper = (fun v -> ApplicationPayloadDU.Launch v |> ApplicationDidLaunch)
+            let mapper = (ApplicationPayloadDU.Launch >> ApplicationDidLaunch)
             (applicationPayloadFunc mapper, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.ApplicationDidTerminate ->
           fun p ->
-            let mapper = (fun v -> ApplicationPayloadDU.Terminate v |> ApplicationDidTerminate)
+            let mapper = (ApplicationPayloadDU.Terminate >> ApplicationDidTerminate)
             (applicationPayloadFunc mapper, p)
             |> PayloadRequired |> decode
         | InvariantEqual EventNames.SystemDidWakeUp ->
           fun _ -> decode (NoPayloadRequired SystemDidWakeUp)
         | InvariantEqual EventNames.PropertyInspectorDidAppear ->
-          fun _ -> 
+          fun _ ->
             PropertyInspectorDidAppear
             |> NoPayloadRequired |> decode
         | InvariantEqual EventNames.PropertyInspectorDidDisappear ->
-          fun _ -> 
+          fun _ ->
             PropertyInspectorDidDisappear
             |> NoPayloadRequired |> decode
         | InvariantEqual EventNames.SendToPlugin ->
-          fun p -> 
+          fun p ->
             match p with
             | Some payload ->
-              Newtonsoft.Json.Linq.JToken.Parse(payload) |> SendToPlugin |> Ok
+              //Newtonsoft.Json.Linq.JToken.Parse(payload) |> SendToPlugin |> Ok
+              payload |> SendToPlugin |> Ok
             | None ->
               Newtonsoft.Json.Linq.JToken.Parse("{}") |> SendToPlugin |> Ok
         | InvariantEqual EventNames.SendToPropertyInspector ->
-          fun p -> 
+          fun p ->
             match p with
             | Some payload ->
-              Newtonsoft.Json.Linq.JToken.Parse(payload) |> SendToPropertyInspector |> Ok
+              //Newtonsoft.Json.Linq.JToken.Parse(payload) |> SendToPropertyInspector |> Ok
+              payload |> SendToPlugin |> Ok
             | None ->
               Newtonsoft.Json.Linq.JToken.Parse("{}") |> SendToPropertyInspector |> Ok
         | _ ->
@@ -183,7 +204,7 @@ module Context =
 
     /// Returns a list of the events that will be sent to StreamDeck.
     [<System.Obsolete("Use the event queue")>]
-    member _.GetEventsToSendFromList() = 
+    member _.GetEventsToSendFromList() =
       match _eventsToSend with
       | Some x -> x
       | None -> []
@@ -216,14 +237,14 @@ module Context =
     /// Returns the Guid of the Context, or None if it was not bound.
     member this.TryGetContextGuid() =
       match this.EventMetadata.Context with
-      | Some x -> 
+      | Some x ->
         match System.Guid.TryParse x with
         | true, v -> Some v
         | false, _ -> None
       | None -> None
 
   /// Adds the given `EventSent` to the `EventContext`
-  let addSendEvent e (ctx : EventContext) = 
+  let addSendEvent e (ctx : EventContext) =
     ctx.AddSendEvent e
     ctx
 

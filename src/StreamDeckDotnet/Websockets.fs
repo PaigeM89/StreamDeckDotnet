@@ -180,7 +180,7 @@ module Websockets =
               //   >>!- ("desc", description)
               //   |> logger.error
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
-                !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
+                !! "Received message of {msg} from web socket" >>!- ("msg", msgText) |> logger.info
                 let! ctx = receiveHandler (msgText)
                 do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
               | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->

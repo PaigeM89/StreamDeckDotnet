@@ -29,7 +29,7 @@ module SendEvent =
       EventMenuOptions.WillAppear
     ] |> List.toArray
 
-  let metadataBuilder context event payload = 
+  let metadataBuilder context event payload =
     {
       EventMetadata.Action = Some "org.streamdeckdotnet.mimic"
       EventMetadata.Event = event
@@ -56,9 +56,23 @@ module SendEvent =
     let buildKeyDownEvent() =
       buildKeyPayload() |> Received.KeyPayloadDU.KeyDown |> EventReceived.KeyDown
 
+    // this is based off a real payload found in the logs during testing
+    let buildAppearPayload() =
+      {
+        AppearPayload.Coordinates = baseCoords
+        AppearPayload.IsInMultiAction = false
+        AppearPayload.Settings = Newtonsoft.Json.Linq.JToken.Parse("{}")
+        AppearPayload.State = None
+      }
+
+    let buildWillAppearEvent() =
+      buildAppearPayload() |> EventReceived.WillAppear
+
   let handleSendEventInput (input : string) =
     match input.ToLowerInvariant() with
     | InvariantEqual EventMenuOptions.KeyDown ->
       EventBuilders.buildKeyDownEvent() |> Some
+    | InvariantEqual EventMenuOptions.WillAppear ->
+      EventBuilders.buildWillAppearEvent() |> Some
     | _ -> None
 

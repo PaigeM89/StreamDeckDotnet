@@ -11,7 +11,7 @@ open Spectre.Console
 type ErrorTypes =
 | StreamDeckProcessCrashed of e : exn
 
-let exampleProjectArgs (args: Args) = 
+let exampleProjectArgs (args: Args) =
     [
         "dotnet"
         args.PathToDll
@@ -76,10 +76,10 @@ let launchStreamDeck path =
     | ex ->
         StreamDeckProcessCrashed ex |> Error
 
-let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Types.Received.EventReceived option) = 
+let handler (socket : Websocket.Socket) (sendEvent : StreamDeckDotnet.Types.Received.EventReceived option) =
     match sendEvent with
     | None -> ()
-    | Some eventToSend -> 
+    | Some eventToSend ->
         let msg = eventToSend.Encode Statics.context Statics.device
         CLI.renderInfo $"Message to send to web socket is:\n  %s{msg}"
         let result = socket.Send msg |> Async.RunSynchronously

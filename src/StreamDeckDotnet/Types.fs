@@ -22,6 +22,13 @@ module internal Encode =
     | Some x -> [ n, f x]
     | None -> []
 
+  let jsonObject (v : JsonValue) = v
+
+module internal Decode =
+
+  /// "Decodes" a jtoken value by simply returning that value.
+  let jToken = fun _ v -> Ok v
+
 [<AutoOpen>]
 module Types =
   open Newtonsoft.Json
@@ -104,8 +111,19 @@ module Types =
   let tryDecodePayload decoder targetType payload =
     result {
       let! payload = Decode.fromString decoder payload
+      //let! payload = Decode. decoder payload
       return targetType payload
     }
+
+  let tryDecodePayloadJson decoder targetType payload =
+    result {
+      !! "Attempting to decode json payload of '{payload}'"
+      >>!+ ("payload", payload)
+      |> logger.info
+      let! payload = Decode.fromValue "" decoder payload
+      return targetType payload
+    }
+
 
   /// Stores all data & metadata relevant to an event recieved by streamdeck.
   /// Events to send back to streamdeck are stored in the context and are sent after the event is fully processed.
@@ -125,7 +143,7 @@ module Types =
     Device : string option
 
     /// The raw JSON describing the payload for this event.
-    Payload : string option
+    Payload : JToken option
   } with
       static member Decoder : Decoder<EventMetadata> =
         Decode.object (fun get -> {
@@ -133,7 +151,9 @@ module Types =
           Event = get.Required.Field "event" Decode.string
           Context = get.Optional.Field "context" Decode.string
           Device = get.Optional.Field "device" Decode.string
-          Payload = get.Optional.Field "payload" Decode.string
+          // "decode" the payload as it is, keeping it a jtoken
+          Payload = get.Optional.Field "payload" Decode.jToken
+            //(Decode.object (fun token -> JToken.FromObject(token)))
         })
 
   /// Creates a new `EventMetadata` that is built from decoding the given string, or returns an error message on decode failure.
@@ -163,10 +183,8 @@ module Types =
       if context.IsSome then "context", Option.get context |> Encode.string
       if device.IsSome then "device", Option.get device |> Encode.string
       "event", Encode.string event
-      // encode the payload as an object, purge the \n that gets added when tostring()'d,
-      // and encode again to generate a string containing a json object.
-      // e.g., "{ \"property1\" : \"value\", \"propety2\": 0 }"
-      "payload", ((Encode.object payload).ToString().Replace("\n", "")) |> Encode.string
+      // encode the payload as an object
+      "payload", Encode.object payload
     ]
 
   /// <summary>Events received from the stream deck.</summary>
@@ -175,10 +193,14 @@ module Types =
   module Received =
 
     let toJToken (s : string) =
-      !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
-      let token = JToken.Parse(s)
-      !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
-      token
+      if String.IsNullOrWhiteSpace s then
+        !! "string is null or whitespace, cannot create jtoken from it. Creating empty token." |> logger.info
+        JToken.Parse("{}")
+      else
+        !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
+        let token = JToken.Parse(s)
+        !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
+        token
 
     /// The (x,y) location of an instance of an action. The top left is [0,0], with the bottom right being [xMax, yMax].
     /// On a standard 15-key stream deck, the bottom right is [4,2].
@@ -208,7 +230,7 @@ module Types =
     } with
       static member Decoder : Decoder<KeyPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.string |> toJToken
+          Settings = get.Required.Field "settings" Decode.jToken
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           State = get.Required.Field "state" Decode.uint32
           UserDesiredState = get.Required.Field "userDesiredState" Decode.uint32
@@ -217,7 +239,8 @@ module Types =
 
       member this.Encode context device actionName =
         let payload = [
-          "settings", Encode.string (this.Settings.ToString())
+          "settings", this.Settings
+            //Encode.string (this.Settings.ToString())
           "coordinates", Encode.object (this.Coordinates.Encode())
           "state", Encode.uint32 this.State
           "userDesiredState", Encode.uint32 this.UserDesiredState
@@ -252,7 +275,7 @@ module Types =
     } with
       static member Decoder : Decoder<SettingsPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.string |> JObject
+          Settings = get.Required.Field "settings" Decode.jToken
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
@@ -271,7 +294,7 @@ module Types =
     } with
       static member Decoder : Decoder<GlobalSettingsPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.string |> JObject
+          Settings = get.Required.Field "settings" Decode.jToken
         })
 
       member this.Encode context device =
@@ -285,22 +308,24 @@ module Types =
     type AppearPayload = {
       Settings : JToken
       Coordinates : Coordinates
-      State : int
+      // the docs don't say this is optional but it's not found in at least 1 real-world example
+      State : int option
       IsInMultiAction : bool
     } with
       static member Decoder : Decoder<AppearPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.string |> JObject
+          Settings = get.Required.Field "settings" Decode.jToken
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
-          State = get.Required.Field "state" Decode.int
+          State = get.Optional.Field "state" Decode.int
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
 
       member this.Encode context device =
         let payload = [
-          "settings", Encode.string (this.Settings.ToString())
+          "settings", this.Settings
+            //Encode.jsonObject this.Settings
           "coordinates", Encode.object (this.Coordinates.Encode())
-          "state", Encode.int this.State
+          yield! Encode.maybeEncode "state" this.State Encode.int
           "isInMultiAction", Encode.bool this.IsInMultiAction
         ]
         encodeWithWrapper context device EventNames.WillAppear payload

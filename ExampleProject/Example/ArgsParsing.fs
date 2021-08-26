@@ -30,7 +30,7 @@ module ArgsParsing =
   let parseArgs args =
     try
       Log.setMessage "Creating args parser" |> logger.trace
-      let argsParser = ArgumentParser.Create<Arguments>(programName = "StreamDeckExample.exe")
+      let argsParser = ArgumentParser.Create<Arguments>(programName = "StreamDeckDotnet.exe")
       
       Log.setMessage "Parsing args" |> logger.trace
       let results = argsParser.ParseCommandLine args
