@@ -27,9 +27,6 @@ module Routing =
   let replace (id, values) m = Map.add id values m
 
   let updateTimers (id, newValues) =
-    //let existing = timerHistory.TryFind id |> Option.defaultValue []
-    // let newTimers = newValue :: existing
-    // let m = replace (id, newTimers) timerHistory
     let m = Map.add id newValues timerHistory
     timerHistory <- m
 
@@ -37,22 +34,32 @@ module Routing =
     !! "In key down handler of example plugin, attempting to extract settings value" |> logger.info
     match ctx.TryGetContextGuid() with
     | Some contextId ->
+      !! "Found context Id of {id}"
+      >>!+ ("id", contextId)
+      |> logger.trace
       match Map.tryFind contextId timerHistory with
       | Some ((Timer.Started startDto) :: xs) ->
         let now = DateTimeOffset.UtcNow
         let diff = now - startDto
         let newValues = Completed diff :: xs
+        !! "Timer found & stopped. Timers are {timers}"
+        >>!+ ("timers", newValues)
+        |> logger.info
         updateTimers (contextId, newValues)
       | Some (x :: xs) ->
         let start = DateTimeOffset.UtcNow
         let newValues = Started start :: (x :: xs)
+        !! "Timers found, but none running. Timer started." |> logger.info
         updateTimers (contextId, newValues)
       | None
       | Some [] ->
         let start = DateTimeOffset.UtcNow
         let newValues = [Started start]
+        !! "No timers found. Starting new timer" |> logger.info
         updateTimers (contextId, newValues)
-    | None -> ()
+    | None ->
+      !! "Unable to get context Id" |> logger.warn
+      ()
     return! next ctx
   }
 

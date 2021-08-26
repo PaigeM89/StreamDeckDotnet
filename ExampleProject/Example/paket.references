@@ -1,4 +1,6 @@
 Microsoft.SourceLink.GitHub
+Microsoft.Extensions.Configuration.FileExtensions
+Microsoft.Extensions.Configuration.Json
 Microsoft.Extensions.Logging.Console
 Microsoft.Extensions.Logging.Debug
 Serilog.Sinks.Console

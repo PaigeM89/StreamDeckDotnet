@@ -11,6 +11,8 @@ github TheAngryByrd/FsLibLog:0dc37e8471dcece8f89d3f8cc9191be206d6fb01 src/FsLibL
 nuget FSharp.Core ~> 5.0
 nuget Microsoft.SourceLink.GitHub prerelease copy_local: true
 # nuget Microsoft.NETFramework.ReferenceAssemblies copy_local: true
+nuget Microsoft.Extensions.Configuration.FileExtensions
+nuget Microsoft.Extensions.Configuration.Json
 nuget Microsoft.Extensions.Logging.Console
 nuget Microsoft.Extensions.Logging.Debug
 
@@ -22,7 +24,6 @@ nuget FSharp.Control.WebSockets
 nuget Serilog.Settings.Configuration
 nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File
-
 
 nuget Argu ~> 6
 nuget YoloDev.Expecto.TestSdk
@@ -110,6 +111,7 @@ group Fable
     nuget Feliz
     nuget Fable.Browser.Dom ~> 2
     nuget Fable.Browser.WebSocket
+    nuget Fable.Browser.Url
     nuget Fable.Elmish.React
     # nuget Elmish.Bridge.Client ~> 3
     nuget Fable.Websockets.Elmish

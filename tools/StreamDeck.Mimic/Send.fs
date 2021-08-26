@@ -48,8 +48,8 @@ module SendEvent =
       {
         KeyPayload.Settings = toJToken "{}"
         KeyPayload.Coordinates = baseCoords
-        KeyPayload.State = 0u
-        KeyPayload.UserDesiredState = 0u
+        KeyPayload.State = Some 0u
+        KeyPayload.UserDesiredState = None
         KeyPayload.IsInMultiAction = false
       }
 

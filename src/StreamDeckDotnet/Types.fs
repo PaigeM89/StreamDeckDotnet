@@ -43,7 +43,7 @@ module Types =
   open StreamDeckDotnet.Logger
   open StreamDeckDotnet.Logger.Operators
 
-  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Types")
+  let rec private logger = LogProvider.getLoggerByQuotation <@ logger @>
 
   let (|InvariantEqual|_|) (str: string) arg =
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some() else None
@@ -224,26 +224,25 @@ module Types =
     type KeyPayload = {
       Settings: JToken
       Coordinates: Coordinates
-      State: uint
-      UserDesiredState: uint
+      State: uint option
+      UserDesiredState: uint option
       IsInMultiAction: bool
     } with
       static member Decoder : Decoder<KeyPayload> =
         Decode.object (fun get -> {
           Settings = get.Required.Field "settings" Decode.jToken
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
-          State = get.Required.Field "state" Decode.uint32
-          UserDesiredState = get.Required.Field "userDesiredState" Decode.uint32
+          State = get.Optional.Field "state" Decode.uint32
+          UserDesiredState = get.Optional.Field "userDesiredState" Decode.uint32
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
 
       member this.Encode context device actionName =
         let payload = [
           "settings", this.Settings
-            //Encode.string (this.Settings.ToString())
           "coordinates", Encode.object (this.Coordinates.Encode())
-          "state", Encode.uint32 this.State
-          "userDesiredState", Encode.uint32 this.UserDesiredState
+          yield! Encode.maybeEncode "state" this.State Encode.uint32
+          yield! Encode.maybeEncode "userDesiredState" this.UserDesiredState Encode.uint32
           "isInMultiAction", Encode.bool this.IsInMultiAction
         ]
         encodeWithWrapper context device actionName payload
@@ -323,7 +322,6 @@ module Types =
       member this.Encode context device =
         let payload = [
           "settings", this.Settings
-            //Encode.jsonObject this.Settings
           "coordinates", Encode.object (this.Coordinates.Encode())
           yield! Encode.maybeEncode "state" this.State Encode.int
           "isInMultiAction", Encode.bool this.IsInMultiAction
@@ -375,7 +373,7 @@ module Types =
       static member Decoder : Decoder<TitleParametersPayload> =
         Decode.object (fun get -> {
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
-          Settings = get.Required.Field "settings" Decode.string |> JObject
+          Settings = get.Required.Field "settings" Decode.jToken
           State = get.Required.Field "state" Decode.int
           Title = get.Optional.Field "title" Decode.string
           TitleParameters = get.Required.Field "titleParameters" TitleParameters.Decoder

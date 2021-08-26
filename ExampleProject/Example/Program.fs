@@ -1,15 +1,26 @@
 open System
+open System.IO
 open StreamDeckDotnet
 open StreamDeckDotnet.Logging
 open Serilog
+open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Configuration.Json
 open Example
 open Example.ArgsParsing
 
-let log = 
+//.MinimumLevel.Verbose()
+
+let configuration =
+  ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+    .Build()
+
+let log =
   LoggerConfiguration()
-    .MinimumLevel.Verbose()
+    .ReadFrom.Configuration(configuration)
     .Enrich.FromLogContext()
-    .Enrich.With(new ThreadIdEnricher())
+    .Enrich.With(ThreadIdEnricher())
     .WriteTo.File("log.txt",
       outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:W3}] ({ThreadId}) {Message}{NewLine}{Exception}"
     )
