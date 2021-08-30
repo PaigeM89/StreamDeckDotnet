@@ -77,6 +77,7 @@ let docsSrcDir = __SOURCE_DIRECTORY__  @@ "docsSrc"
 let docsToolDir = __SOURCE_DIRECTORY__ @@ "docsTool"
 
 let examplePluginPath = __SOURCE_DIRECTORY__ @@ "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
+let guidGenPluginPath = __SOURCE_DIRECTORY__ @@ "ExampleProject/org.PaigeM89.GuidGenerator.sdPlugin"
 
 let gitOwner = "PaigeM89"
 let gitRepoName = "StreamDeckDotnet"
@@ -520,11 +521,11 @@ let watchTests _ =
 let runExpecto _ =
     !! testsGlob
     |> Seq.map(fun proj -> fun () ->
-        dotnet.run 
+        dotnet.run
             (fun opt -> opt |> DotNet.Options.withWorkingDirectory (IO.Path.GetDirectoryName proj))
             "--summary"
     )
-    |> Seq.iter(fun x -> 
+    |> Seq.iter(fun x ->
         let pr = x()
         printfn "%A" pr
     )
@@ -544,10 +545,10 @@ let runMimic _ =
         "--info", "\"\""
     ]
     let args = argsList |> List.map(fun (x, y) -> sprintf "%s %s" x y) |> String.concat " "
-    let pr = 
-        DotNet.exec 
+    let pr =
+        DotNet.exec
             (DotNet.Options.lift install.Value >>  DotNet.Options.withWorkingDirectory "./")
-            mimicDll 
+            mimicDll
             args
     printfn "Process Result is %A" pr
 
@@ -633,7 +634,7 @@ module ExampleProject =
         let clientSrc = "./ExampleProject/Example.Client"
         Shell.copy
             examplePluginPath
-            [ 
+            [
                 clientSrc @@ "manifest.json"
             ]
 
@@ -643,7 +644,7 @@ module ExampleProject =
             [
                clientSrc @@ "public" @@ "index.html"
                clientSrc @@ "public" @@ "sdpi.css"
-               clientSrc @@ "output" @@ "bundle.js"
+               clientSrc @@ "public" @@ "bundle.js"
             ]
 
         let codeSrc = "./ExampleProject/Example"
@@ -651,11 +652,11 @@ module ExampleProject =
             (examplePluginPath @@ "code")
             (codeSrc @@ "publish")
             (fun _ -> true)
-        
+
         ()
 
     let macDeployExampleProject ctx =
-        let pluginPath = 
+        let pluginPath =
             "~/Application Support/com.elgato.StreamDeck/Plugins/org.StreamDeckDotnet.Example.sdPlugin"
         Shell.cleanDir pluginPath
 
@@ -664,6 +665,98 @@ module ExampleProject =
             "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
             (fun _ -> true)
 
+
+    let buildGuidGenerator ctx =
+        let proj = "ExampleProject/GuidGenerator/GuidGenerator.fsproj"
+        [proj]
+        |> Seq.map(fun dir -> fun () ->
+            let args =
+                [
+                ] |> String.concat " "
+            DotNet.restore(fun c ->
+                { c with
+                    Common =
+                        c.Common
+                        |> DotNet.Options.withCustomParams
+                            (Some(args))
+                }) dir)
+        |> Seq.iter(retryIfInCI 2)
+        let args =
+            [
+                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
+            ]
+        DotNet.publish(fun c ->
+            { c with
+                Configuration = configuration (ctx.Context.AllExecutingTargets)
+                Common =
+                    c.Common
+                    |> DotNet.Options.withAdditionalArgs args
+                Runtime = Some "osx-x64"
+            }) proj
+
+        Shell.cleanDir "ExampleProject/GuidGenerator/publish"
+
+        let configuration = configuration (ctx.Context.AllExecutingTargets)
+        let configurationStr = configuration.ToString()
+
+        Shell.copyDir
+            "ExampleProject/GuidGenerator/publish"
+            ("ExampleProject/GuidGenerator/bin" @@ configurationStr @@ "net5.0/osx-x64/publish")
+            (fun _ -> true)
+
+    let publishGuidGenerator ctx =
+        Shell.cleanDir guidGenPluginPath
+        // copy all root files
+        let clientSrc = "./ExampleProject/GuidGenerator.Client"
+        Shell.copy
+            guidGenPluginPath
+            [
+                clientSrc @@ "manifest.json"
+            ]
+
+        //copy the property inspector files
+        Shell.copy
+            (guidGenPluginPath @@ "propertyinspector")
+            [
+               clientSrc @@ "public" @@ "index.html"
+               clientSrc @@ "public" @@ "sdpi.css"
+               clientSrc @@ "public" @@ "bundle.js"
+            ]
+
+        let codeSrc = "./ExampleProject/GuidGenerator"
+        Shell.copyDir
+            (guidGenPluginPath @@ "code")
+            (codeSrc @@ "publish")
+            (fun _ -> true)
+
+        ()
+
+    let packageGuidGenerator ctx =
+        Shell.cleanDir guidGenPluginPath
+        // copy all root files
+        let clientSrc = "./ExampleProject/GuidGenerator.Client"
+        Shell.copy
+            guidGenPluginPath
+            [
+                clientSrc @@ "manifest.json"
+            ]
+
+        //copy the property inspector files
+        Shell.copy
+            (guidGenPluginPath @@ "propertyinspector")
+            [
+               clientSrc @@ "public" @@ "index.html"
+               clientSrc @@ "public" @@ "sdpi.css"
+               clientSrc @@ "public" @@ "bundle.js"
+            ]
+
+        let codeSrc = "./ExampleProject/GuidGenerator"
+        Shell.copyDir
+            (guidGenPluginPath @@ "code")
+            (codeSrc @@ "publish")
+            (fun _ -> true)
+
+        ()
 
 let generateAssemblyInfo _ =
 
@@ -832,6 +925,9 @@ Target.create "BuildExample" ExampleProject.buildExample
 Target.create "PublishExample" ExampleProject.publishExampleProject
 Target.create "PackageExample" ExampleProject.packageExampleProject
 Target.create "DeployExample" ExampleProject.macDeployExampleProject
+Target.create "BuildGuidGenerator" ExampleProject.buildGuidGenerator
+Target.create "PublishGuidGenerator" ExampleProject.publishGuidGenerator
+Target.create "PackageGuidGenerator" ExampleProject.packageGuidGenerator
 Target.create "RunMimic" runMimic
 Target.create "FSharpAnalyzers" fsharpAnalyzers
 Target.create "DotnetTest" dotnetTest
@@ -893,6 +989,10 @@ Target.create "ReleaseDocs" releaseDocs
     ==> "PublishExample"
     ==> "PackageExample"
     ==> "DeployExample"
+
+"BuildGuidGenerator"
+    ==> "PublishGuidGenerator"
+    ==> "PackageGuidGenerator"
 
 "DotnetRestore"
     ==> "DotnetBuild"

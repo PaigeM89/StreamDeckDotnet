@@ -1,5 +1,6 @@
 namespace StreamDeckDotnet
 
+#if !FABLE_COMPILER
 module internal Task =
   open System
   open System.Threading.Tasks
@@ -14,14 +15,14 @@ module internal Task =
 
   let inline failWith<'a> (ex : exn) =
     Task<'a>.FromException(ex)
+#endif
+// [<RequireQualifiedAccess>]
+// module internal Exception =
+//   open System.Runtime.ExceptionServices
 
-[<RequireQualifiedAccess>]
-module internal Exception =
-  open System.Runtime.ExceptionServices
-  
-  let Reraise ex =
-      (ExceptionDispatchInfo.Capture ex).Throw ()
-      Unchecked.defaultof<_>
+//   let Reraise ex =
+//       (ExceptionDispatchInfo.Capture ex).Throw ()
+//       Unchecked.defaultof<_>
 
 [<AutoOpen>]
 module internal Async =

@@ -26,24 +26,25 @@ module internal Encode =
 
 module internal Decode =
 
-  /// "Decodes" a jtoken value by simply returning that value.
-  let jToken = fun _ v -> Ok v
+  /// "Decodes" a JsonValue value by simply returning that value.
+  let JsonValue = fun _ v -> Ok v
 
 [<AutoOpen>]
 module Types =
-  open Newtonsoft.Json
-  open Newtonsoft.Json.Linq
+  // open Newtonsoft.Json
+  // open Newtonsoft.Json.Linq
 #if FABLE_COMPILER
   open Thoth.Json
 #else
   open Thoth.Json.Net
 #endif
   open FsToolkit.ErrorHandling
-  open StreamDeckDotnet.Logging
-  open StreamDeckDotnet.Logger
-  open StreamDeckDotnet.Logger.Operators
+  //open StreamDeckDotnet.Logging
+  // open StreamDeckDotnet.Logger
+  // open StreamDeckDotnet.Logger.Operators
 
-  let rec private logger = LogProvider.getLoggerByQuotation <@ logger @>
+  //let rec private logger = LogProvider.getLoggerByName "StreamDeckDotnet.Types"
+    //LogProvider.getLoggerByQuotation <@ logger @>
 
   let (|InvariantEqual|_|) (str: string) arg =
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some() else None
@@ -117,9 +118,9 @@ module Types =
 
   let tryDecodePayloadJson decoder targetType payload =
     result {
-      !! "Attempting to decode json payload of '{payload}'"
-      >>!+ ("payload", payload)
-      |> logger.info
+      // !! "Attempting to decode json payload of '{payload}'"
+      // >>!+ ("payload", payload)
+      // |> logger.info
       let! payload = Decode.fromValue "" decoder payload
       return targetType payload
     }
@@ -143,7 +144,7 @@ module Types =
     Device : string option
 
     /// The raw JSON describing the payload for this event.
-    Payload : JToken option
+    Payload : JsonValue option
   } with
       static member Decoder : Decoder<EventMetadata> =
         Decode.object (fun get -> {
@@ -151,9 +152,9 @@ module Types =
           Event = get.Required.Field "event" Decode.string
           Context = get.Optional.Field "context" Decode.string
           Device = get.Optional.Field "device" Decode.string
-          // "decode" the payload as it is, keeping it a jtoken
-          Payload = get.Optional.Field "payload" Decode.jToken
-            //(Decode.object (fun token -> JToken.FromObject(token)))
+          // "decode" the payload as it is, keeping it a JsonValue
+          Payload = get.Optional.Field "payload" Decode.JsonValue
+            //(Decode.object (fun token -> JsonValue.FromObject(token)))
         })
 
   /// Creates a new `EventMetadata` that is built from decoding the given string, or returns an error message on decode failure.
@@ -168,8 +169,8 @@ module Types =
       "event", Encode.string event
     ]
 
-  /// Encodes an Event with a payload that is just the given JToken.
-  let encodeWithJson (context: string option) (device : string option) event (json : JToken) =
+  /// Encodes an Event with a payload that is just the given JsonValue.
+  let encodeWithJson (context: string option) (device : string option) event (json : JsonValue) =
     Encode.object [
       if context.IsSome then "context", Option.get context |> Encode.string
       if device.IsSome then "device", Option.get device |> Encode.string
@@ -192,15 +193,15 @@ module Types =
   /// but normal plugin writing should not need to encode these event types.
   module Received =
 
-    let toJToken (s : string) =
-      if String.IsNullOrWhiteSpace s then
-        !! "string is null or whitespace, cannot create jtoken from it. Creating empty token." |> logger.info
-        JToken.Parse("{}")
-      else
-        !! "Parsing string '{s}' into jtoken" >>!- ("s", s) |> logger.trace
-        let token = JToken.Parse(s)
-        !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
-        token
+    // let toJsonValue (s : string) =
+    //   if String.IsNullOrWhiteSpace s then
+    //     !! "string is null or whitespace, cannot create JsonValue from it. Creating empty token." |> logger.info
+    //     JsonValue.Parse("{}")
+    //   else
+    //     !! "Parsing string '{s}' into JsonValue" >>!- ("s", s) |> logger.trace
+    //     let token = JsonValue.Parse(s)
+    //     !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
+    //     token
 
     /// The (x,y) location of an instance of an action. The top left is [0,0], with the bottom right being [xMax, yMax].
     /// On a standard 15-key stream deck, the bottom right is [4,2].
@@ -222,7 +223,7 @@ module Types =
 
     /// The `KeyDown` and `KeyUp` payload properties. Both events have the same properties.
     type KeyPayload = {
-      Settings: JToken
+      Settings: JsonValue
       Coordinates: Coordinates
       State: uint option
       UserDesiredState: uint option
@@ -230,7 +231,7 @@ module Types =
     } with
       static member Decoder : Decoder<KeyPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.jToken
+          Settings = get.Required.Field "settings" Decode.JsonValue
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           State = get.Optional.Field "state" Decode.uint32
           UserDesiredState = get.Optional.Field "userDesiredState" Decode.uint32
@@ -268,13 +269,13 @@ module Types =
 
     /// Settings bag for the instance of the action.
     type SettingsPayload = {
-      Settings : JToken
+      Settings : JsonValue
       Coordinates : Coordinates
       IsInMultiAction : bool
     } with
       static member Decoder : Decoder<SettingsPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.jToken
+          Settings = get.Required.Field "settings" Decode.JsonValue
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
         })
@@ -289,11 +290,11 @@ module Types =
 
     /// Settings bag for the plugin across all instances.
     type GlobalSettingsPayload = {
-      Settings : JToken
+      Settings : JsonValue
     } with
       static member Decoder : Decoder<GlobalSettingsPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.jToken
+          Settings = get.Required.Field "settings" Decode.JsonValue
         })
 
       member this.Encode context device =
@@ -305,7 +306,7 @@ module Types =
     /// Received when an instance of an action will appear or will disappear from the stream deck,
     /// such as when the user changes profiles or opens/leaves a folder.
     type AppearPayload = {
-      Settings : JToken
+      Settings : JsonValue
       Coordinates : Coordinates
       // the docs don't say this is optional but it's not found in at least 1 real-world example
       State : int option
@@ -313,7 +314,7 @@ module Types =
     } with
       static member Decoder : Decoder<AppearPayload> =
         Decode.object (fun get -> {
-          Settings = get.Required.Field "settings" Decode.jToken
+          Settings = get.Required.Field "settings" Decode.JsonValue
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
           State = get.Optional.Field "state" Decode.int
           IsInMultiAction = get.Required.Field "isInMultiAction" Decode.bool
@@ -365,7 +366,7 @@ module Types =
     /// Payload for the title parameters, title, or related settings changing.
     type TitleParametersPayload = {
       Coordinates : Coordinates
-      Settings: JToken
+      Settings: JsonValue
       State : int
       Title : string option
       TitleParameters : TitleParameters
@@ -373,7 +374,7 @@ module Types =
       static member Decoder : Decoder<TitleParametersPayload> =
         Decode.object (fun get -> {
           Coordinates = get.Required.Field "coordinates" Coordinates.Decoder
-          Settings = get.Required.Field "settings" Decode.jToken
+          Settings = get.Required.Field "settings" Decode.JsonValue
           State = get.Required.Field "state" Decode.int
           Title = get.Optional.Field "title" Decode.string
           TitleParameters = get.Required.Field "titleParameters" TitleParameters.Decoder
@@ -552,10 +553,10 @@ module Types =
     /// <remarks>This is sent when the user clicks off an action in the stream deck software.</remarks>
     | PropertyInspectorDidDisappear
     /// <summary>Received when the Property Inspector sends a `SendToPlugin` event.</summary>
-    | SendToPlugin of payload : JToken
+    | SendToPlugin of payload : JsonValue
     /// <summary>Received by the Property Inspector when the plugin sends a `SendToPropertyInspector` event.</summary>
     /// <remarks></remarks>
-    | SendToPropertyInspector of payload : JToken
+    | SendToPropertyInspector of payload : JsonValue
       with
         /// The name of the event in camelCase.
         member this.GetName() =
@@ -776,7 +777,7 @@ module Types =
     /// Sending this will automatically send a `DidReceiveSettings` callback to the Property Inspector with the new settings.
     /// Similarly, if the Property Inspector updates settings, then this plugin will receive the updated settings.
     /// </remarks>
-    | SetSettings of payload : JToken
+    | SetSettings of payload : JsonValue
     /// <summary>Request the persistent data for this action instance from the stream deck application.</summary>
     /// <remarks>The stream deck application will respond with a `DidReceiveSettings` event.</remarks>
     | GetSettings
@@ -788,7 +789,7 @@ module Types =
     /// These settings will be saved to the Keychain on macOS and to the Cerdential Store on Windows. This is useful for storing a shared token,
     /// for example.
     /// </remarks>
-    | SetGlobalSettings of payload : JToken
+    | SetGlobalSettings of payload : JsonValue
     /// <summary>Request the global persistent data for (meaning "relevant to", not "for each") all instances of this action.</summary>
     | GetGlobalSettings
     /// <summary>Open the given URL on the default system browser.</summary>
@@ -807,7 +808,7 @@ module Types =
     /// Tell the stream deck application to switch to one of the predefined profiles from the `manifest.json`.
     | SwitchToProfile of payload : SwitchToProfilePayload
     /// Send a payload to the Property Inspector for an instance of the action.
-    | SendToPropertyInspector of payload : JToken
+    | SendToPropertyInspector of payload : JsonValue
     with
       /// Encodes this event to a json-ified string to send to the stream deck application.
       /// Events are encoded automatically when the web socket finishes handling an event.

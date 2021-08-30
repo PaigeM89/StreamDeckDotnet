@@ -46,7 +46,7 @@ module SendEvent =
   module EventBuilders =
     let buildKeyPayload() =
       {
-        KeyPayload.Settings = toJToken "{}"
+        KeyPayload.Settings = Thoth.Json.Net.JsonValue.Parse("{}")
         KeyPayload.Coordinates = baseCoords
         KeyPayload.State = Some 0u
         KeyPayload.UserDesiredState = None

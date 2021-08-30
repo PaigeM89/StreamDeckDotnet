@@ -2,10 +2,14 @@ namespace StreamDeckDotnet
 
 [<AutoOpen>]
 module Core =
+  #if !FABLE_COMPILER
   open Microsoft.Extensions.Logging
+  open Thoth.Json.Net
+  #else
+  open Thoth.Json
+  #endif
   open Context
   open Types
-  open Thoth.Json.Net
   open FsToolkit.ErrorHandling
 
   /// The result of an EventContext being processed through the event pipeline.
@@ -23,15 +27,19 @@ module Core =
   /// <see cref="EventFunc" /> or exit the pipeline early.
   type EventHandler = EventFunc -> EventFunc
 
+  #if FABLE_COMPILER
+  type ErrorHandler = exn -> EventHandler
+  #else
   /// Takes a <see cref="System.Exception" /> object and an <see cref="Microsoft.Extensions.Logging.ILogger"/> instance
   /// to handle any uncaught errors. Returns an <see cref="EventHandler" />.
   type ErrorHandler = exn -> ILogger -> EventHandler
+  #endif
 
   /// Short circuit the pipeline and return None, exiting that pipeline's processing.
-  let skipPipeline : EventFuncResult = Async.lift None
+  let skipPipeline : EventFuncResult = Async.singleton None
 
   /// Stop evaluating the rest of the pipeline and return Some, causing the event to be successfully processed.
-  let earlyReturn : EventFunc = Some >> Async.lift
+  let earlyReturn : EventFunc = Some >> Async.singleton
 
   /// Combines two <see cref="EventHandler" /> functions into a single function.
   /// Consider using the `>=>` operator as an easier alternative to this function.
@@ -145,7 +153,7 @@ module Core =
   /// Adds the passed message to the Logs in the context, with the event metadata added to the log, then continues processing.
   let logWithContext msg : EventHandler =
     fun next (ctx : EventContext) ->
-      let msg = msg + $"Event Metadata: {ctx.EventMetadata}"
+      let msg = msg + (sprintf "Event Metadata: %A" ctx.EventMetadata)
       addLogToContext msg ctx
       |> next
 
@@ -157,53 +165,3 @@ module Core =
 
   /// Flow the event handler to the next function, ignoring the passed function
   let flow (_ : EventFunc) (ctx: EventContext) = Context.lift ctx
-
-module ArgsParsing =
-  open System
-  open Argu
-  open StreamDeckDotnet.Websockets
-  open StreamDeckDotnet.Logging
-
-  let logger = LogProvider.getLoggerByName("StreamDeckDotnet.ArgsParsing")
-
-  type Arguments =
-  | [<Mandatory>][<AltCommandLine("-port")>] Port of int
-  | [<Mandatory>][<AltCommandLine("-pluginUUID")>] PluginUUID of Guid
-  | [<Mandatory>][<AltCommandLine("-registerEvent")>] RegisterEvent of string
-  | [<AltCommandLine("-info")>]Info of string
-    interface IArgParserTemplate with
-      member s.Usage =
-        match s with
-        | Port _ -> "Specify a port to connect to."
-        | PluginUUID _ -> "Specify a UUID/GUID for the plugin."
-        | RegisterEvent _ -> "The event name to register with."
-        | Info _ -> "JSON-formatted addtional information."
-
-  let parsePort p =
-    if p < 0 || p > int UInt16.MaxValue then
-        failwith "invalid port number."
-    else p
-
-  let parseArgs args =
-    try
-      Log.setMessage "Creating args parser" |> logger.trace
-      let argsParser = ArgumentParser.Create<Arguments>(programName = "StreamDeckDotnetPlugin.exe")
-
-      Log.setMessage "Parsing args" |> logger.trace
-      let results = argsParser.ParseCommandLine args
-
-      let port = results.PostProcessResults (<@ Port @>, parsePort) |> List.head
-      Log.setMessage "Creating Args object from parsed args" |> logger.trace
-      {
-        StreamDeckSocketArgs.Port = port
-        PluginUUID = results.GetResult PluginUUID
-        RegisterEvent = results.GetResult RegisterEvent
-        Info = results.GetResult Info
-      }
-    with
-    | ex ->
-      Log.setMessage "Exception while parsing args: {msg}"
-      >> Log.addContextDestructured "msg" ex.Message
-      >> Log.addExn ex
-      |> logger.error
-      raise ex

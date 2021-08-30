@@ -1,0 +1,41 @@
+{
+  "Actions": [
+    {
+      "Icon": "actionIcon", 
+      "Name": "Guid Generator", 
+      "States": [
+        {
+          "Image": "actionDefaultImage",
+          "TitleAlignment": "middle", 
+          "FontSize": "16"
+        }
+      ], 
+      "SupportedInMultiActions": false,
+      "Tooltip": "Generate a random GUID on your clip board!", 
+      "UUID": "org.PaigeM89.GuidGenerator.Plugin"
+    }
+  ], 
+  "SDKVersion": 2,
+  "Author": "Max Paige", 
+  "CodePath": "code/GuidGenerator",
+  "PropertyInspectorPath": "propertyinspector/index.html",
+  "Description": "This generates a new random guid each time the key is pressed and puts it on the clip board.", 
+  "Name": "Guid Generator", 
+  "Icon": "pluginIcon", 
+  "URL": "https://www.elgato.com/gaming/stream-deck", 
+  "Version": "0.1",
+  "OS": [
+    {
+        "Platform": "mac", 
+        "MinimumVersion" : "10.11"
+    },
+    {
+        "Platform": "windows", 
+        "MinimumVersion" : "10"
+    }
+  ],
+  "Software": 
+    {
+        "MinimumVersion" : "4.1"
+    }
+}

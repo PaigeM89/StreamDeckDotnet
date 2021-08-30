@@ -21,8 +21,10 @@
     <Compile Include="Types.fs" />
     <Compile Include="Context.fs" />
     <Compile Include="Websockets.fs" />
+    <Compile Include="ArgsParsing.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Routing.fs" />
+    <Compile Include="Client.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -1,0 +1,5 @@
+group Fable
+FSharp.Core
+Newtonsoft.Json
+Thoth.Json
+FsToolkit.ErrorHandling

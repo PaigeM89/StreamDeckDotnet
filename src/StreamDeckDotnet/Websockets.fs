@@ -74,22 +74,10 @@ module Websockets =
           ()
       }
 
-      // let eventsEncoded (ctx : Context.EventContext) =
-      //   ctx.GetEventsToSend()
-      //   |> List.map (fun payloads ->
-      //     let payload = payloads.Encode ctx.EventMetadata.Context ctx.EventMetadata.Device
-      //     !! "Created event sent payload of {payload}"
-      //     >>!- ("payload", payload)
-      //     |> logger.debug
-      //     payload
-      //   )
-
       let awaitAsyncReceive () = async {
         !! "calling ts websocket receive message as utf8. Socket state is {state}"
         >>!+ ("state", _tsWebsocket.State)
         |> logger.trace
-        // let writeStream = new MemoryStream()
-        // ThreadSafeWebSocket.receiveMessage _tsWebsocket WebSocket.DefaultBufferSize WebSocketMessageType.Text writeStream
 
         return! ThreadSafeWebSocket.receiveMessageAsUTF8 _tsWebsocket
       }
@@ -167,18 +155,6 @@ module Websockets =
               let! msg = awaitAsyncReceive()
               !! "After await async receive in core loop" |> logger.trace
               match msg with
-              // | Ok (WebSocket.ReceiveStreamResult.Stream stream) ->
-              //   !! "Initializing stream reader from websocket receive stream" |> logger.trace
-              //   use reader = new StreamReader(stream)
-              //   let msg = reader.ReadToEnd()
-              //   !! "Received message of {msg} from web socket" >>!- ("msg", msg) |> logger.info
-              //   let! ctx = receiveHandler (msg)
-              //   do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
-              // | Ok (WebSocket.ReceiveStreamResult.Closed (status, description)) ->
-              //   !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
-              //   >>!+ ("status", status)
-              //   >>!- ("desc", description)
-              //   |> logger.error
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
                 !! "Received message of {msg} from web socket" >>!- ("msg", msgText) |> logger.info
                 let! ctx = receiveHandler (msgText)
