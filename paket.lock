@@ -187,7 +187,7 @@ NUGET
       System.Collections.Immutable (>= 1.5 < 5.1) - restriction: || (== net50) (&& (== netstandard2.0) (>= netcoreapp2.1))
 GITHUB
   remote: TheAngryByrd/FsLibLog
-    src/FsLibLog/FsLibLog.fs (0dc37e8471dcece8f89d3f8cc9191be206d6fb01)
+    src/FsLibLog/FsLibLog.fs (32423661f90d8fd67d926bc6110a3ecd30dcb957)
 GROUP Build
 STORAGE: NONE
 RESTRICTION: == netstandard2.0

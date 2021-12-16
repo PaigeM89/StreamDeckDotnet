@@ -6,11 +6,10 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../StreamDeckDotnet/Types.fs" />
-    <Compile Include="../StreamDeckDotnet/Context.fs" />
-    <Compile Include="../StreamDeckDotnet/Core.fs" />
-    <Compile Include="../StreamDeckDotnet/Routing.fs" />
     <Compile Include="Client.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StreamDeckDotnet.Library\StreamDeckDotnet.Library.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

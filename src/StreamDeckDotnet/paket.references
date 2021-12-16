@@ -1,10 +1,10 @@
 Microsoft.SourceLink.GitHub
-Microsoft.Extensions.Logging.Console
-Microsoft.Extensions.Logging.Debug
+# Microsoft.Extensions.Logging.Console
+# Microsoft.Extensions.Logging.Debug
 Ply
 Thoth.Json.Net
 FsToolkit.ErrorHandling
 FSharp.Control.WebSockets
 Serilog
 Argu
-File:FsLibLog.fs
+# File:FsLibLog.fs

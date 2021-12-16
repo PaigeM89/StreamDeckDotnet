@@ -3,11 +3,11 @@ namespace StreamDeckDotnet
 [<AutoOpen>]
 module Core =
   #if !FABLE_COMPILER
-  open Microsoft.Extensions.Logging
   open Thoth.Json.Net
   #else
   open Thoth.Json
   #endif
+  open StreamDeckDotnet.Logging
   open Context
   open Types
   open FsToolkit.ErrorHandling
@@ -30,9 +30,9 @@ module Core =
   #if FABLE_COMPILER
   type ErrorHandler = exn -> EventHandler
   #else
-  /// Takes a <see cref="System.Exception" /> object and an <see cref="Microsoft.Extensions.Logging.ILogger"/> instance
+  /// Takes a <see cref="System.Exception" /> object and an <see cref="StreamDeckDotnet.Logging.Logger"/> instance
   /// to handle any uncaught errors. Returns an <see cref="EventHandler" />.
-  type ErrorHandler = exn -> ILogger -> EventHandler
+  type ErrorHandler = exn -> Logger -> EventHandler
   #endif
 
   /// Short circuit the pipeline and return None, exiting that pipeline's processing.

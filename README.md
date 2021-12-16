@@ -105,7 +105,7 @@ Interesting log when exiting the stream deck application:
 * [ ] Minimize deploy size, either as part of this package and/or as an example
 * Do we need some way to send events outside of handling events? eg, timer?
 
-## Documetnation
+## Documentation
 
 * start
 

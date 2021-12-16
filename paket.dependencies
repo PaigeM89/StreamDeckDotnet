@@ -6,7 +6,7 @@ storage: none
 
 framework: netstandard2.0, net5.0
 
-github TheAngryByrd/FsLibLog:0dc37e8471dcece8f89d3f8cc9191be206d6fb01 src/FsLibLog/FsLibLog.fs
+github TheAngryByrd/FsLibLog:32423661f90d8fd67d926bc6110a3ecd30dcb957 src/FsLibLog/FsLibLog.fs
 
 nuget FSharp.Core ~> 5.0
 nuget Microsoft.SourceLink.GitHub prerelease copy_local: true
