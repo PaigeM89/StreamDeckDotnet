@@ -1,7 +1,8 @@
 # Fable Minimal App
 
+This example builds a barebones Property Inspector using some elements from `StreamDeckDotnet` for event handling.
 
-This attemps to build a plugin using an Elmish architecture, but wiring up a webscoket connection to weave into the lifecycle has proven to be excessively complicated.
+This example is not yet complete.
 
 ## Requirements
 
@@ -11,11 +12,12 @@ This attemps to build a plugin using an Elmish architecture, but wiring up a web
 
 ## Building and running the app
 
-* Install JS dependencies: `npm install`
-* Install F# dependencies: `npm start`
-* After the first compilation is finished, in your browser open: http://localhost:8080/
+* Install JS dependencies: `yarn install`
+* Install F# dependencies: `yarn build`
+* Publish the app: `yarn prod`
+* Copy everything to deploy directory: `./copyToDeploy.sh`
 
-Any modification you do to the F# code will be reflected in the web page after saving.
+Once the deploy folder (`../jorg.StreamDeckDotnet.Example.sdPlugin`) contains both the back end plugin and the property inspector, you can copy that plugin to your plugins directory and test it.
 
 ## Project structure
 
@@ -27,9 +29,6 @@ JS dependencies are declared in `package.json`, while `package-lock.json` is a l
 
 [Webpack](https://webpack.js.org) is a JS bundler with extensions, like a static dev server that enables hot reloading on code changes. Fable interacts with Webpack through the `fable-loader`. Configuration for Webpack is defined in the `webpack.config.js` file. Note this sample only includes basic Webpack configuration for development mode, if you want to see a more comprehensive configuration check the [Fable webpack-config-template](https://github.com/fable-compiler/webpack-config-template/blob/master/webpack.config.js).
 
-### F#
-
-The sample only contains two F# files: the project (.fsproj) and a source file (.fs) in the `src` folder.
 
 ### Web assets
 

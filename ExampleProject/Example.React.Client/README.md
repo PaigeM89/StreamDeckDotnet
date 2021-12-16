@@ -1,6 +1,8 @@
 # Fable Minimal App
 
-This is a small Fable app project so you can easily get started and add your own code easily in it.
+This uses Fable React as a basis for building the Property Inspector.
+
+This example is not yet complete.
 
 ## Requirements
 

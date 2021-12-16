@@ -177,9 +177,6 @@ NUGET
       System.Drawing.Common (>= 5.0) - restriction: || (== net50) (&& (== netstandard2.0) (>= netcoreapp3.0))
     TextCopy (4.3.1)
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 5.0)
-    Thoth.Json (6.0)
-      Fable.Core (>= 3.1.6)
-      FSharp.Core (>= 4.7.2)
     Thoth.Json.Net (5.0)
       Fable.Core (>= 3.0 < 4.0)
       FSharp.Core (>= 4.7.2)
@@ -1652,23 +1649,13 @@ NUGET
       FSharp.Core (>= 4.7.2)
     FsToolkit.ErrorHandling (2.7)
       FSharp.Core (>= 4.6.2)
+    NuGet.Frameworks (5.11)
     Thoth.Json (5.1)
       Fable.Core (>= 3.1.6)
       FSharp.Core (>= 4.7.2)
   remote: https://api.nuget.org/v3/index.json
     FSharp.Core (5.0.2)
     Newtonsoft.Json (13.0.1)
-
-GROUP GuidGenerator
-RESTRICTION: == netstandard2.0
-NUGET
-  remote: https://api.nuget.org/v3/index.json
-    FSharp.Core (5.0.2)
-    NuGet.Frameworks (5.11)
-  remote: https://www.nuget.org/api/v2
-    Microsoft.Extensions.DependencyInjection.Abstractions (5.0)
-    TextCopy (4.3.1)
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 5.0)
 
 GROUP Tools
 STORAGE: NONE

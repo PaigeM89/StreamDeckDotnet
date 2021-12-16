@@ -1,13 +1,21 @@
-﻿module GuidGenerator
+﻿module GuidGenerator.Program
 
+open System
 open StreamDeckDotnet
+open StreamDeckDotnet.Types.Sent
 open StreamDeckDotnet.EventBinders
+open Thoth.Json.Net
 open TextCopy
 
-let keyDownHandler keyPayload next (ctx : EventContext) =  async {
-  let guid = System.Guid.NewGuid()
-  ClipboardService.SetText(string guid)
+let addPIEvent (g : Guid) (ctx : EventContext) =
+  let piSettings = GuidGenerator.SharedTypes.PropertyInspectorSettings.Create g
+  let event = piSettings.Encode() |> SendToPropertyInspector
+  ctx.AddSendEvent event
 
+let keyDownHandler keyPayload next (ctx : EventContext) =  async {
+  let guid = Guid.NewGuid()
+  ClipboardService.SetText(string guid)
+  addPIEvent guid ctx
   return! next ctx
 }
 

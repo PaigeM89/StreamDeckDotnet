@@ -9,6 +9,7 @@
     <ProjectReference Include="../../src/StreamDeckDotnet/StreamDeckDotnet.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="../GuidGenerator.Shared/SharedTypes.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

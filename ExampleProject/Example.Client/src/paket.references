@@ -1,7 +1,9 @@
 group Fable
 FSharp.Core
+Newtonsoft.Json
 Thoth.Json
-Fable.Elmish.React
-
-Fable.Websockets.Client
-Fable.Websockets.Elmish
+Fable.SimpleJson
+Fable.Browser.Dom
+Fable.Browser.WebSocket
+Fable.Browser.Url
+Fable.Promise

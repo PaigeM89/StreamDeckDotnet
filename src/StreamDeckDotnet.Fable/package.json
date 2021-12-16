@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode development"
+  },
+  "name": "streamdeckdotnet-fable",
+  "version": "0.1.0",
+  "main": "bundle.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.15.0",
+    "fable-compiler": "^2.13.0",
+    "fable-loader": "^2.1.9",
+    "webpack": "^5.51.1",
+    "webpack-cli": "^4.8.0"
+  }
+}

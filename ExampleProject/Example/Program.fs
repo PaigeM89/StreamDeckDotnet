@@ -8,8 +8,6 @@ open Microsoft.Extensions.Configuration.Json
 open Example
 open Example.ArgsParsing
 
-//.MinimumLevel.Verbose()
-
 let configuration =
   ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())

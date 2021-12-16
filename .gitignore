@@ -284,3 +284,4 @@ ExampleProject/Example.React.Client/**/bin
 ExampleProject/Example.React.Client/**/obj
 ExampleProject/Example.React.Client/**/.fable
 **/coverage.xml.*
+src/**/*.fs.js

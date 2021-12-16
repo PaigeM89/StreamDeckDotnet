@@ -51,5 +51,6 @@ module.exports = {
             test: /\.fs(x|proj)?$/,
             use: "fable-loader"
         }]
-    }
+  },
+  watch: true
 }

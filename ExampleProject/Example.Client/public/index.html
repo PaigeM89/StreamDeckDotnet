@@ -6,15 +6,22 @@
   <link rel="stylesheet" href="sdpi.css">
 </head>
 <body>
+    <div class="spdi-wrapper">
+      <button id="reset-button" class="sdpi-item">Reset Count</button>
+      <input id="set-count-input" class="sdpi-item" />
+      <button id="set-count-button" class="sdpi-item">Set Count</button>
+      <p id="was-initialized">Streamdeck not initialized.</p>
+    </div>
     <script src="bundle.js"></script>
     <script type="text/JavaScript">
       // console.log('Loading core javascript');
-      function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo) {
-        EntryPoint.connectStreamDeck(inPort, inPluginUUID, inRegisterEvent, inInfo);
+      function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo, inActionInfo) {
+        document.getElementById("was-initialized").innerHTML = "Was initialized!";
+        EntryPoint.connectStreamDeck(inPort, inPluginUUID, inRegisterEvent, inInfo, inActionInfo);
       }
       // console.log('ready to run!');
     </script>
-    <div id="elmish-app"></div>
+    <!-- <div id="elmish-app"></div> -->
     <!-- <div class="spdi-wrapper"> -->
       <!-- <div class="sdpi-wrapper" id="elmish-app">
         <details class="message"><summary>I'm a message inside the elmish app!</summary></details>

@@ -1,6 +1,5 @@
 import { Record, Union } from "../Example.Client/src/.fable/fable-library.3.1.15/Types.js";
 import { record_type, class_type, union_type, string_type } from "../Example.Client/src/.fable/fable-library.3.1.15/Reflection.js";
-import { toString, guid, object } from "../Example.Client/src/.fable/Thoth.Json.5.1.0/Encode.fs.js";
 
 export class ServerMessage extends Union {
     constructor(tag, ...fields) {
@@ -53,7 +52,7 @@ export function Types_PropertyInspectorRegisterEvent_Create_244AC511(uuid) {
 }
 
 export function Types_PropertyInspectorRegisterEvent__Encode(this$) {
-    return object([["event", this$.Event], ["uuid", guid(this$.UUID)]]);
+    throw 1;
 }
 
 export class Types_ClientSendEvent extends Union {
@@ -75,6 +74,6 @@ export function Types_ClientSendEvent__Encode(this$) {
     let payload;
     const e = this$.fields[0];
     payload = Types_PropertyInspectorRegisterEvent__Encode(e);
-    return toString(0, payload);
+    throw 1;
 }
 

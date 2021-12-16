@@ -58,6 +58,13 @@ Debug a property inspector [from this link](http://localhost:23654) -
 
 elgato docs: https://developer.elgato.com/documentation/stream-deck/sdk/events-received/#didreceivesettings
 
+# Stream Deck Mimic
+
+This in-progress tool is designed to mimic a Stream Deck Application but with more visibility into what exactly is being sent & received. It is best to test with the real Stream Deck software when possible, but if you need to peek more into what is being sent, this tool can help.
+
+Currently, the tool has barely any events implemented. Pull requests welcome! There's a lot I want to exapnd on with it and just haven't had the time for it yet.
+
+-----------------------------------------------
 
 # TODO
 
@@ -95,11 +102,8 @@ Interesting log when exiting the stream deck application:
 
 ## SD.NET
 
-* [ ] Event name not actually being set in the context (see log on line 236 of routing.fs)
 * [ ] Minimize deploy size, either as part of this package and/or as an example
 * Do we need some way to send events outside of handling events? eg, timer?
-* Should event binding bind to context, too?
-* What all can fit in Fable to make a pure front-end plugin?
 
 ## Documetnation
 

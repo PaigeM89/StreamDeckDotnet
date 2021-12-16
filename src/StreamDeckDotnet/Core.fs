@@ -87,11 +87,15 @@ module Core =
       let x = ctx.EventMetadata.Event
       if validate x
       then next ctx
-      else skipPipeline
+      else
+        printfn "Validation failed, skipping pipeline"
+        skipPipeline
 
   /// Validates the two given strings (assumed to be event names) to be equal, ignoring case.
   let validateAction (s : string) (t : string) =
-    s.ToLowerInvariant() = t.ToLowerInvariant()
+    let r = s.ToLowerInvariant() = t.ToLowerInvariant()
+    printfn "Validating %s against %s, reuslt is %b" s t r
+    r
 
   /// Validates that the event in the EventContext is a "keyDown" event.
   let KEY_DOWN : EventHandler = validateEvent (validateAction EventNames.KeyDown)

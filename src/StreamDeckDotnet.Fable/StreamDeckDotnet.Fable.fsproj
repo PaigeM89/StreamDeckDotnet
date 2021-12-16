@@ -6,7 +6,6 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <!-- <Compile Include="../StreamDeckDotnet/Helpers.fs" /> -->
     <Compile Include="../StreamDeckDotnet/Types.fs" />
     <Compile Include="../StreamDeckDotnet/Context.fs" />
     <Compile Include="../StreamDeckDotnet/Core.fs" />

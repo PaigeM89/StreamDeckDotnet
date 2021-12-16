@@ -8,12 +8,13 @@
 <body>
     <div class="sdpi-wrapper">
       <p class="sdpi-item">Hit the button to put a GUID on your clip board!</p>
+      <p class="sdpi-item">Last Generated Guid:</p>
+      <input id="last-generated-guid-output" class="sdpi-item disabled" value="" />
     </div>
     <script src="bundle.js"></script>
     <script type="text/JavaScript">
       // console.log('Loading core javascript');
       function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, inInfo, inActionInfo) {
-        document.getElementById("was-initialized").innerHTML = "Was initialized!";
         EntryPoint.connectStreamDeck(inPort, inPluginUUID, inRegisterEvent, inInfo, inActionInfo);
       }
       // console.log('ready to run!');

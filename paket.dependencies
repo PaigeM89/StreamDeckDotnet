@@ -16,8 +16,7 @@ nuget Microsoft.Extensions.Logging.Console
 nuget Microsoft.Extensions.Logging.Debug
 
 nuget Ply
-nuget Thoth.Json
-nuget Thoth.Json.Net
+nuget Thoth.Json.Net ~> 5.0
 nuget FsToolkit.ErrorHandling
 nuget FSharp.Control.WebSockets
 nuget Serilog.Settings.Configuration
@@ -114,14 +113,6 @@ group Fable
     nuget Fable.Websockets.Client
     nuget Fable.SimpleJson
     nuget Fable.Promise
-
-group GuidGenerator
-    source https://www.nuget.org/api/v2
-    source https://api.nuget.org/v3/index.json
-    framework: netstandard2.0
-
-    nuget FSharp.Core
-    nuget TextCopy >= 4.3
 
 // package resolution packages
 // not directly needed but paket sometimes needs a hand

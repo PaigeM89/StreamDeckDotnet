@@ -105,10 +105,12 @@ module Context =
     /// Attempts to bind the `Event` and `Payload` (if applicable) in the `EventMetadata` to
     /// an `EventReceived`. This will automatically match the `Event` to the appropriate type.
     member _.TryBindEventAsync() = asyncResult {
+      printfn "Attempting to bind event"
       let keyPayloadFunc mapper = tryDecodePayload KeyPayloadDU.Decoder mapper
       let applicationPayloadFunc mapper = tryDecodePayload ApplicationPayloadDU.Decoder mapper
       let decoder =
         let event = eventMetadata.Event.ToLowerInvariant()
+        printfn "Matching event %s" event
         match event with
         | InvariantEqual EventNames.KeyDown ->
           let mapper = KeyPayloadDU.KeyDown >> EventReceived.KeyDown
@@ -175,11 +177,13 @@ module Context =
               #endif
         | InvariantEqual EventNames.SendToPropertyInspector ->
           fun p ->
+            printfn "Matched against 'sendToPropertyInspector'"
             match p with
             | Some payload ->
-              //Newtonsoft.Json.Linq.JToken.Parse(payload) |> SendToPropertyInspector |> Ok
-              payload |> SendToPlugin |> Ok
+              string payload |> printfn "found payload %A"
+              payload |> SendToPropertyInspector |> Ok
             | None ->
+              printfn "no payload found"
               #if FABLE_COMPILER
               null |> SendToPropertyInspector |> Ok
               #else
@@ -187,6 +191,7 @@ module Context =
               #endif
         | _ ->
           fun _ -> UnknownEventType event |> Error
+      (string eventMetadata.Payload) |> printfn "Attempting to decode payload: %A"
       return! decoder eventMetadata.Payload
     }
 

@@ -53,23 +53,37 @@ type Websocket(port : int, uuid: System.Guid, messageHandler : string -> Async<R
                     Dom.window.setTimeout
                         ((fun () -> connect timeout server), timeout, ()) |> ignore
                 socket.onmessage <- fun e ->
-                    printfn "socket.onmessage was called"
-                    Json.tryParseNativeAs(string e.data)
-                    |> function
-                        | Ok msg ->
-                            printfn "websocket msg is %A" msg
-                            messageHandler msg
-                            |> Async.StartAsPromise
-                            |> Promise.map (fun ctx ->
-                                match ctx with
-                                | Ok ctx ->
-                                    ctx.GetEncodedEventsToSend() |> List.iter socket.send
-                                | Error e ->
-                                    printfn "Error handling message: %A" e
-                            )
-                            |> Promise.start
-                        | _ ->
-                            printfn "could not parse message %A" e
+                    printfn "socket.onmessage was called. raw data is %A" (string e.data)
+                    let msg = string e.data
+                    printfn "websocket msg is %A" msg
+                    messageHandler msg
+                    |> Async.StartAsPromise
+                    |> Promise.map (fun ctx ->
+                        match ctx with
+                        | Ok ctx ->
+                            let events = ctx.GetEncodedEventsToSend()
+                            printfn "Got context back, sending %i events" (List.length events)
+                            events |> List.iter socket.send
+                        | Error e ->
+                            printfn "Error handling message: %A" e
+                    )
+                    |> Promise.start
+                    // Json.tryParseNativeAs(e.data)
+                    // |> function
+                    //     | Ok msg ->
+                    //         printfn "websocket msg is %A" msg
+                    //         messageHandler msg
+                    //         |> Async.StartAsPromise
+                    //         |> Promise.map (fun ctx ->
+                    //             match ctx with
+                    //             | Ok ctx ->
+                    //                 ctx.GetEncodedEventsToSend() |> List.iter socket.send
+                    //             | Error e ->
+                    //                 printfn "Error handling message: %A" e
+                    //         )
+                    //         |> Promise.start
+                    //     | _ ->
+                    //         printfn "could not parse message %A" e
         connect (60000) (getWebsocketServerUrl port)
         printfn "Websocket finished connect(), returning out of constructor"
         match !wsref with

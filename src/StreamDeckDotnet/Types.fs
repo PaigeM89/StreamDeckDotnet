@@ -186,6 +186,17 @@ module Types =
       "event", Encode.string event
       // encode the payload as an object
       "payload", Encode.object payload
+      //yield! payload
+    ]
+
+  let encodeJsonWithWrapper (context: string option) (device : string option) event (payload : JsonValue) =
+    Encode.object [
+      if context.IsSome then "context", Option.get context |> Encode.string
+      if device.IsSome then "device", Option.get device |> Encode.string
+      "event", Encode.string event
+      // encode the payload as an object
+      "payload", Encode.jsonObject payload
+      //yield! payload
     ]
 
   /// <summary>Events received from the stream deck.</summary>
@@ -817,9 +828,9 @@ module Types =
         match this with
         | RegisterPlugin payload -> payload.Encode() |> encode
         | LogMessage payload -> payload.Encode context device |> encode
-        | SetSettings payload -> encodeWithWrapper context device EventNames.SetSettings ["payload", payload] |> encode
+        | SetSettings payload -> encodeJsonWithWrapper context device EventNames.SetSettings payload |> encode
         | GetSettings -> encodeWithWrapper context device EventNames.GetSettings [] |> encode
-        | SetGlobalSettings payload -> encodeWithWrapper context device EventNames.SetGlobalSettings ["payload", payload] |> encode
+        | SetGlobalSettings payload -> encodeJsonWithWrapper context device EventNames.SetGlobalSettings payload |> encode
         | GetGlobalSettings -> encodeWithWrapper context device EventNames.GetGlobalSettings [] |> encode
         | OpenUrl payload -> payload.Encode context device |> encode
         | SetTitle payload -> payload.Encode context device |> encode
@@ -828,7 +839,7 @@ module Types =
         | ShowOk -> encodeWithWrapper context device EventNames.ShowOk [] |> encode
         | SetState payload -> payload.Encode context device |> encode
         | SwitchToProfile payload -> payload.Encode context device |> encode
-        | SendToPropertyInspector payload -> encodeWithWrapper context device EventNames.SendToPropertyInspector [ "payload", payload ] |> encode
+        | SendToPropertyInspector payload -> encodeJsonWithWrapper context device EventNames.SendToPropertyInspector payload |> encode
 
   /// Creates a Log event containing the given message.
   let createLogEvent (msg : string) =
