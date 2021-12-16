@@ -5,24 +5,21 @@
   </PropertyGroup>
   <PropertyGroup>
     <Title>StreamDeckDotnet</Title>
-    <Description>StreamDeckDotnet does the thing!</Description>
+    <Description>StreamDeckDotnet helps you build event handling pipelines for custom Stream Deck plugins!</Description>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\paket-files\TheAngryByrd\FsLibLog\src\FsLibLog\FsLibLog.fs">
-      <Paket>True</Paket>
-      <Link>paket-files/FsLibLog.fs</Link>
-    </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
-    <Compile Include="Types.fs" />
-    <Compile Include="Context.fs" />
     <Compile Include="Websockets.fs" />
-    <Compile Include="Core.fs" />
-    <Compile Include="Routing.fs" />
+    <Compile Include="ArgsParsing.fs" />
+    <Compile Include="Client.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StreamDeckDotnet.Library\StreamDeckDotnet.Library.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

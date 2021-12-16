@@ -4,11 +4,11 @@
 
 ## What is StreamDeckDotnet?
 
-StreamDeckDotnet is a library that does this specific thing.  
+StreamDeckDotnet is a framework for building plugins for your Elgato Stream Deck. It features a somewhat opionated event handling pipeline that is heavily inspired by Suave / Giraffe, giving you a clear & direct way of knowing exactly how events are handled.
 
 ## Why use StreamDeckDotnet?
 
-I created it because I had to solve an issue with this other thing.
+Current solutions involve direct dotnet event handling & delegating, a pattern that isn't _awful_ but can be potentially unclear. Additionally, integrating these libraries into F# is similarly not _awful_ but doesn't feel like good F# and often feels messy & verbose. This library attempts to make building a plugin fast, easy, and understandable.
 
 ---
 

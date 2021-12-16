@@ -20,11 +20,11 @@ module CLI =
     type Prompt = SelectionPrompt<string>
     let builder() = new SelectionPrompt<string>()
 
-    let withTitle title (bldr : Prompt) = 
+    let withTitle title (bldr : Prompt) =
       bldr.Title <- title
       bldr
 
-    let withPageSize size (bldr : Prompt) = 
+    let withPageSize size (bldr : Prompt) =
       bldr.PageSize <- size
       bldr
 
@@ -66,12 +66,12 @@ module CLI =
     renderSendEventMenu()
     |> SendEvent.handleSendEventInput
 
-  let (|ExitCommand|_|) (input : string) = 
+  let (|ExitCommand|_|) (input : string) =
     if input.ToLowerInvariant() = (ExitTxt.ToLowerInvariant()) then
       Some (fun () -> Exit)
     else
       None
-  let (|SendEventCommand|_|) (input : string) = 
+  let (|SendEventCommand|_|) (input : string) =
     if input.ToLowerInvariant() = (SendEventTxt.ToLowerInvariant()) then
       Some (fun () -> pickAndBuildSendEvent() |> SendEvent)
     else
@@ -110,7 +110,7 @@ module CLI =
     match input with
     | ExitCommand f -> f()
     | SendEventCommand f -> f()
-    | _ -> 
+    | _ ->
       renderError $"Unrecognized user input: ${input}"
       ReturnToMenu
 
@@ -127,6 +127,6 @@ module CLI =
       // | SetActiveAction ->
       //   actionInstanceHandler()
       | Exit -> ()
-    
+
     runLoop()
 

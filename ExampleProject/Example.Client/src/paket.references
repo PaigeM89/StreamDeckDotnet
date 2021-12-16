@@ -1,5 +1,0 @@
-group Fable
-FSharp.Core
-Thoth.Json
-Fable.Elmish.React
-Elmish.Bridge.Client
