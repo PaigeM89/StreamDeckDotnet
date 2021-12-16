@@ -1,8 +1,7 @@
 namespace StreamDeckDotnet
 
 open StreamDeckDotnet.Logging
-open StreamDeckDotnet.Logger
-open StreamDeckDotnet.Logger.Operators
+open StreamDeckDotnet.Logging.Operators
 
 [<AutoOpen>]
 module Client =
@@ -23,11 +22,11 @@ module Client =
   /// <param name="msg">The raw incoming message from the Stream Deck application.</param>
   let socketMsgHandler (routes: Core.EventHandler) (msg : string) = asyncResult {
     //first decode into an EventMetadata
-    !! "Decoding event metadata from msg '{msg}'"
+    !!! "Decoding event metadata from msg '{msg}'"
     >>!- ("msg", msg)
     |> logger.info
     let! eventMetadata = Types.decodeEventMetadata msg
-    !! "Building context from metadata object {meta}"
+    !!! "Building context from metadata object {meta}"
     >>!+ ("meta", eventMetadata)
     |> logger.info
     //then build the context
@@ -35,25 +34,25 @@ module Client =
 
     let initHandler = fun ctx -> AsyncOption.retn ctx
 
-    !! "Beginning Event Handling. Metadata is {meta}."
+    !!! "Beginning Event Handling. Metadata is {meta}."
     >>!+ ("meta", eventMetadata)
     |> logger.trace
 
     match eventMetadata.Payload with
     | Some payload ->
-      !! "Event metadata payload is {payload}"
+      !!! "Event metadata payload is {payload}"
       >>!+ ("payload", (string payload))
       |> logger.trace
     | None ->
-      !! "Event metadata did not bind a payload" |> logger.trace
+      !!! "Event metadata did not bind a payload" |> logger.trace
 
     //now match the context to the known routes
     match! routes initHandler ctx with
     | Some ctx ->
-      !! "Event {name} was successfully handled" >>!+ ("name", ctx.EventName) |> logger.trace
+      !!! "Event {name} was successfully handled" >>!+ ("name", ctx.EventName) |> logger.trace
       return ctx
     | None ->
-      !! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventName) |> logger.warn
+      !!! "No route found to handle event {eventName}" >>!+ ("eventName", ctx.EventName) |> logger.warn
       return ctx
   }
 
@@ -62,7 +61,7 @@ module Client =
     match r with
     | Ok x -> return x
     | Error e ->
-      !! "Received Error {e} when handling msg {msg}"
+      !!! "Received Error {e} when handling msg {msg}"
       >>!+ ("e", e) >>!+ ("msg", msg)
       |> logger.error
       return failwithf "%A" e
@@ -71,7 +70,7 @@ module Client =
   // handles application registration & sends a `RegisterPlugin` event to streamdeck application.
   let private handleSocketRegister (args : Websockets.StreamDeckSocketArgs) () =
     let register = Sent.RegisterPluginPayload.Create args.RegisterEvent args.PluginUUID
-    !! "Creating registration event of {event}"
+    !!! "Creating registration event of {event}"
     >>!+ ("event", register)
     |> logger.info
     let sendEvent = Sent.EventSent.RegisterPlugin register

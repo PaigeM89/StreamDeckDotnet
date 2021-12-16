@@ -5,6 +5,7 @@ module ArgsParsing =
   open Argu
   open StreamDeckDotnet.Websockets
   open StreamDeckDotnet.Logging
+  open StreamDeckDotnet.Logging.Operators
 
   let logger = LogProvider.getLoggerByName("StreamDeckDotnet.ArgsParsing")
 
@@ -28,14 +29,14 @@ module ArgsParsing =
 
   let parseArgs args =
     try
-      Log.setMessage "Creating args parser" |> logger.trace
+      !!! "Creating args parser" |> logger.trace
       let argsParser = ArgumentParser.Create<Arguments>(programName = "StreamDeckDotnetPlugin.exe")
 
-      Log.setMessage "Parsing args" |> logger.trace
+      !!! "Parsing args" |> logger.trace
       let results = argsParser.ParseCommandLine args
 
       let port = results.PostProcessResults (<@ Port @>, parsePort) |> List.head
-      Log.setMessage "Creating Args object from parsed args" |> logger.trace
+      !!! "Creating Args object from parsed args" |> logger.trace
       {
         StreamDeckSocketArgs.Port = port
         PluginUUID = results.GetResult PluginUUID
@@ -44,7 +45,7 @@ module ArgsParsing =
       }
     with
     | ex ->
-      Log.setMessage "Exception while parsing args: {msg}"
+      !!! "Exception while parsing args: {msg}"
       >> Log.addContextDestructured "msg" ex.Message
       >> Log.addExn ex
       |> logger.error

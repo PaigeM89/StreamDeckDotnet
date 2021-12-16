@@ -6,14 +6,6 @@ open Browser
 open Browser.Types
 open Fable.SimpleJson
 
-// let getBaseUrl port =
-//     let url =
-//         Dom.window.location.href
-//         |> Url.URL.Create
-//     url.protocol <- url.protocol.Replace("http", "ws")
-//     url.hash <- ""
-//     url
-
 let getWebsocketServerUrl (port: int) =
     sprintf "ws://127.0.0.1:%i" port
 
@@ -23,8 +15,6 @@ let getRegisterWebsocket (uuid : Guid) =
     uuid = uuid
   |}
   Json.stringify(json)
-
-//https://github.com/fable-compiler/fable-browser/blob/master/src/WebSocket/Browser.WebSocket.fs
 
 type Websocket(port : int, uuid: System.Guid, messageHandler : string -> Async<Result<StreamDeckDotnet.Context.EventContext, string>>) =
     let mutable msgQueue : string list = []
@@ -68,22 +58,6 @@ type Websocket(port : int, uuid: System.Guid, messageHandler : string -> Async<R
                             printfn "Error handling message: %A" e
                     )
                     |> Promise.start
-                    // Json.tryParseNativeAs(e.data)
-                    // |> function
-                    //     | Ok msg ->
-                    //         printfn "websocket msg is %A" msg
-                    //         messageHandler msg
-                    //         |> Async.StartAsPromise
-                    //         |> Promise.map (fun ctx ->
-                    //             match ctx with
-                    //             | Ok ctx ->
-                    //                 ctx.GetEncodedEventsToSend() |> List.iter socket.send
-                    //             | Error e ->
-                    //                 printfn "Error handling message: %A" e
-                    //         )
-                    //         |> Promise.start
-                    //     | _ ->
-                    //         printfn "could not parse message %A" e
         connect (60000) (getWebsocketServerUrl port)
         printfn "Websocket finished connect(), returning out of constructor"
         match !wsref with

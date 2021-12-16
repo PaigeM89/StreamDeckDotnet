@@ -5,8 +5,6 @@ open Fable.Core
 open Browser.Types
 open Browser.Dom
 open StreamDeckDotnet
-// open StreamDeckDotnet.Routing
-// open StreamDeckDotnet.EventBinders
 open StreamDeckDotnet.Fable
 open GuidGenerator.SharedTypes
 open GuidGenerator.Websockets

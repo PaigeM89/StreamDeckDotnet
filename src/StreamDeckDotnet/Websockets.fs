@@ -8,8 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 
 open StreamDeckDotnet.Logging
-open StreamDeckDotnet.Logger
-open StreamDeckDotnet.Logger.Operators
+open StreamDeckDotnet.Logging.Operators
 open FSharp.Control.Tasks.Affine
 
 module Websockets =
@@ -52,30 +51,30 @@ module Websockets =
       let port = args.Port
 
       let lockAsync() =
-        !! "Locking socket" |> logger.info
+        !!! "Locking socket" |> logger.info
         _semaphore.WaitAsync() |> Async.AwaitTask
       let release() =
-        !! "Unlocking socket" |> logger.info
+        !!! "Unlocking socket" |> logger.info
         _semaphore.Release() |> ignore
 
       let connectWebsocket (port : int) = task {
         if _isClosed() then
           let uri = $"ws://localhost:{port}"
-          !! "Connecting web socket to port {port} with uri {uri}"
+          !!! "Connecting web socket to port {port} with uri {uri}"
           >>!- ("port", port)
           >>!- ("uri", uri)
           |> logger.info
           let ws = new ClientWebSocket()
           do! ws.ConnectAsync(Uri(uri), _cancelSource.Token)
-          !! "Creating thread safe web socket from web socket" |> logger.trace
+          !!! "Creating thread safe web socket from web socket" |> logger.trace
           _tsWebsocket <- ThreadSafeWebSocket.createFromWebSocket ws
-          !! "Finished connecting web socket" |> logger.trace
+          !!! "Finished connecting web socket" |> logger.trace
         else
           ()
       }
 
       let awaitAsyncReceive () = async {
-        !! "calling ts websocket receive message as utf8. Socket state is {state}"
+        !!! "calling ts websocket receive message as utf8. Socket state is {state}"
         >>!+ ("state", _tsWebsocket.State)
         |> logger.trace
 
@@ -84,15 +83,15 @@ module Websockets =
 
       //splitting this into a separate function allows for better error logging
       let closeSocket () =
-        !! "In close socket function" |> logger.trace
+        !!! "In close socket function" |> logger.trace
         async {
           let! result = ThreadSafeWebSocket.close _tsWebsocket WebSocketCloseStatus.NormalClosure "Closing web socket"
           match result with
           | Ok () ->
-            !! "Socket closed successfully" |> logger.trace
+            !!! "Socket closed successfully" |> logger.trace
             ()
           | Error e ->
-            !! "Error closing thread safe web socket: {err}"
+            !!! "Error closing thread safe web socket: {err}"
             >>!+ ("err", e)
             |> logger.error
 
@@ -101,17 +100,17 @@ module Websockets =
 
       member _.DisconnectAsync() = async {
           if _isOpen() then
-            !! "attempting disconnect socket, currently has state {state}"
+            !!! "attempting disconnect socket, currently has state {state}"
             >>!+ ("state", _tsWebsocket.State)
             |> logger.debug
-            !! "Closing socket" |> logger.info
+            !!! "Closing socket" |> logger.info
             do! closeSocket()
-            !! "Disposing socket" |> logger.debug
+            !!! "Disposing socket" |> logger.debug
             _tsWebsocket.websocket.Dispose()
-            !! "Initializing new websocket" |> logger.trace
+            !!! "Initializing new websocket" |> logger.trace
             do! connectWebsocket(port) |> Async.AwaitTask
           else
-            !! "Websocket is attempting to disconnect, but is not open and is in state {state}"
+            !!! "Websocket is attempting to disconnect, but is not open and is in state {state}"
             >>!+ ("state", _tsWebsocket.State)
             |> logger.warn
         }
@@ -120,26 +119,26 @@ module Websockets =
         try
           try
             if _isOpen() then
-              !! "Sending {text} to socket" >>!- ("text", text) |> logger.info
+              !!! "Sending {text} to socket" >>!- ("text", text) |> logger.info
               let! sendResult = ThreadSafeWebSocket.sendMessageAsUTF8 _tsWebsocket text
 
               match sendResult with
               | Ok _ ->
-                !! "Message sent to web socket!" |> logger.trace
+                !!! "Message sent to web socket!" |> logger.trace
               | Error e ->
-                !! "Error sending to thread safe websocket: {err}"
+                !!! "Error sending to thread safe websocket: {err}"
                 >>!+("err", e)
                 |> logger.error
           with
           | e ->
-            !! "Received error {e} when sending to socket" >>!- ("e", e.Message) >>!! e |> logger.error
+            !!! "Received error {e} when sending to socket" >>!- ("e", e.Message) >>!! e |> logger.error
             ()
         finally
           _semaphore.Release() |> ignore
       }
 
       member this.SendAllToSocketAsync(payloads : string list) = async {
-        !! "Sending multiple payloads to socket" |> logger.trace
+        !!! "Sending multiple payloads to socket" |> logger.trace
         let allAsyncs = payloads |> List.map this.SendToSocketAsync
         // We can't assume we can send all the messages at once; they may be order-dependent, based on context.
         let! _ = Async.Sequential allAsyncs
@@ -148,59 +147,59 @@ module Websockets =
 
       member this.Receive() =
         async {
-          !! "Entering while loop to recieve & send messages" |> logger.trace
+          !!! "Entering while loop to recieve & send messages" |> logger.trace
           while _isOpen() do
             try
-              !! "Calling await async receive in core loop" |> logger.trace
+              !!! "Calling await async receive in core loop" |> logger.trace
               let! msg = awaitAsyncReceive()
-              !! "After await async receive in core loop" |> logger.trace
+              !!! "After await async receive in core loop" |> logger.trace
               match msg with
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
-                !! "Received message of {msg} from web socket" >>!- ("msg", msgText) |> logger.info
+                !!! "Received message of {msg} from web socket" >>!- ("msg", msgText) |> logger.info
                 let! ctx = receiveHandler (msgText)
                 do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
               | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->
-                !! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
+                !!! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
                 >>!+ ("status", status)
                 >>!- ("desc", description)
                 |> logger.error
               | Error e ->
-                !! "Received error {err} when awaiting async recieve for web socket"
+                !!! "Received error {err} when awaiting async recieve for web socket"
                 >>!+ ("err", e)
                 |> logger.error
             with
             | ex ->
-              !! "Exiting receive loop due to error {msg}:\n{st}"
+              !!! "Exiting receive loop due to error {msg}:\n{st}"
               >>!+ ("msg", ex.Message)
               >>!+ ("st", ex.StackTrace)
               |> logger.error
 
-          !! "Exiting receive loop due to socket closure" |> logger.trace
+          !!! "Exiting receive loop due to socket closure" |> logger.trace
         }
 
       member this.RunAsync() =
         let fin = async {
-            !! "Finishing async work, disposing socket" |> logger.trace
+            !!! "Finishing async work, disposing socket" |> logger.trace
             do! this.DisconnectAsync()
           }
         let work = async {
-            !! "Starting web socket, connecting... " |> logger.trace
+            !!! "Starting web socket, connecting... " |> logger.trace
             do! (connectWebsocket port) |> Async.AwaitTask
             if not (_isOpen()) then
-              !! "Websocket is not open after starting" |> logger.trace
+              !!! "Websocket is not open after starting" |> logger.trace
               ()
             else
-              !! "Web socket successfully connected in state {state}, sending registration response."
+              !!! "Web socket successfully connected in state {state}, sending registration response."
               >>!+ ("state", _tsWebsocket.State)
               |> logger.trace
               let response = registrationHandler()
-              !! "Response being sent to web socket is:\n  \'{response}\'"
+              !!! "Response being sent to web socket is:\n  \'{response}\'"
               >>!- ("response", response)
               |> logger.info
               do! this.SendToSocketAsync(response)
-            !! "this.Receive() call in runAsync" |> logger.trace
+            !!! "this.Receive() call in runAsync" |> logger.trace
             do! this.Receive()
-            !! "Receive() received, returning in work func" |> logger.trace
+            !!! "Receive() received, returning in work func" |> logger.trace
             return ()
           }
         Async.tryFinally fin work

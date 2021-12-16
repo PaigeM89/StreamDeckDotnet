@@ -112,15 +112,11 @@ module Types =
   let tryDecodePayload decoder targetType payload =
     result {
       let! payload = Decode.fromString decoder payload
-      //let! payload = Decode. decoder payload
       return targetType payload
     }
 
   let tryDecodePayloadJson decoder targetType payload =
     result {
-      // !! "Attempting to decode json payload of '{payload}'"
-      // >>!+ ("payload", payload)
-      // |> logger.info
       let! payload = Decode.fromValue "" decoder payload
       return targetType payload
     }
@@ -203,16 +199,6 @@ module Types =
   /// These events have an `Encode` method because they are referenced by `StreamDeck.Mimic`,
   /// but normal plugin writing should not need to encode these event types.
   module Received =
-
-    // let toJsonValue (s : string) =
-    //   if String.IsNullOrWhiteSpace s then
-    //     !! "string is null or whitespace, cannot create JsonValue from it. Creating empty token." |> logger.info
-    //     JsonValue.Parse("{}")
-    //   else
-    //     !! "Parsing string '{s}' into JsonValue" >>!- ("s", s) |> logger.trace
-    //     let token = JsonValue.Parse(s)
-    //     !! "Token created is {t}" >>!+ ("t", token) |> logger.trace
-    //     token
 
     /// The (x,y) location of an instance of an action. The top left is [0,0], with the bottom right being [xMax, yMax].
     /// On a standard 15-key stream deck, the bottom right is [4,2].
