@@ -9,14 +9,15 @@
       <Paket>True</Paket>
       <Link>paket-files/FsLibLog.fs</Link>
     </Compile>
-    <Compile Include="../../src/StreamDeckDotnet/Helpers.fs" />
-    <Compile Include="../../src/StreamDeckDotnet/Types.fs" />
     <Compile Include="State.fs" />
     <Compile Include="Send.fs" />
     <Compile Include="CLI.fs" />
     <Compile Include="ArgsParsing.fs" />
     <Compile Include="Webhost.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\StreamDeckDotnet.Library\StreamDeckDotnet.Library.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
