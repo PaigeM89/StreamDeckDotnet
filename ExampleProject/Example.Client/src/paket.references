@@ -1,9 +1,0 @@
-group Fable
-FSharp.Core
-Newtonsoft.Json
-Thoth.Json
-Fable.SimpleJson
-Fable.Browser.Dom
-Fable.Browser.WebSocket
-Fable.Browser.Url
-Fable.Promise

@@ -1,7 +1,0 @@
-group Fable
-FSharp.Core
-Thoth.Json
-Fable.Elmish.React
-
-Fable.Websockets.Client
-Fable.Websockets.Elmish
