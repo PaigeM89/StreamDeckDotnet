@@ -1,7 +1,7 @@
-import { Record } from "../GuidGenerator.Client/src/.fable/fable-library.3.1.15/Types.js";
-import { record_type, class_type } from "../GuidGenerator.Client/src/.fable/fable-library.3.1.15/Reflection.js";
-import { guid, object } from "../GuidGenerator.Client/src/.fable/Thoth.Json.5.1.0/Encode.fs.js";
-import { guid as guid_1, object as object_1 } from "../GuidGenerator.Client/src/.fable/Thoth.Json.5.1.0/Decode.fs.js";
+import { Record } from "../GuidGenerator.Client/src/fable_modules/fable-library.3.6.3/Types.js";
+import { record_type, class_type } from "../GuidGenerator.Client/src/fable_modules/fable-library.3.6.3/Reflection.js";
+import { guid, object } from "../GuidGenerator.Client/src/fable_modules/Thoth.Json.5.1.0/Encode.fs.js";
+import { guid as guid_1, object as object_1 } from "../GuidGenerator.Client/src/fable_modules/Thoth.Json.5.1.0/Decode.fs.js";
 
 export class PropertyInspectorSettings extends Record {
     constructor(LastGeneratedGuid) {

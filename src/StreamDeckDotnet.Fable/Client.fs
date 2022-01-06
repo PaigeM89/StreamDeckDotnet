@@ -30,10 +30,8 @@ module Client =
 
     match handledContext with
     | Some ctx ->
-      string ctx |> printfn "Handler found, returning handled context: %A"
       return ctx
     | None ->
-      string ctx |> printfn "No handler found, returning default context: %A"
       return ctx
   }
 

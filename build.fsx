@@ -358,14 +358,20 @@ let updateChangelog ctx =
     changelog.Entries
     |> List.tryFind (fun entry -> entry.SemVer = newVersion)
     |> Option.iter (fun entry ->
-        let releaseDate = if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)"
+        let releaseDate =
+          if entry.Date.IsSome then
+            entry.Date.Value.ToString("yyyy-MM-dd")
+          else "(no date specified)"
         Trace.traceErrorfn "Version %s already exists in %s, released on %s" verStr changelogFilename releaseDate
         failwith "Can't release with a duplicate version number"
     )
     changelog.Entries
     |> List.tryFind (fun entry -> entry.SemVer > newVersion)
     |> Option.iter (fun entry ->
-        let releaseDate = if entry.Date.IsSome then entry.Date.Value.ToString("yyyy-MM-dd") else "(no date specified)"
+        let releaseDate =
+          if entry.Date.IsSome then
+            entry.Date.Value.ToString("yyyy-MM-dd")
+          else "(no date specified)"
         Trace.traceErrorfn "You're trying to release version %s, but a later version %s already exists, released on %s" verStr entry.SemVer.AsString releaseDate
         failwith "Can't release with a version number older than an existing release"
     )
@@ -554,118 +560,6 @@ let runMimic _ =
 
 module ExampleProject =
 
-    let buildExample ctx =
-        let proj = "ExampleProject/Example/Example.fsproj"
-        [proj]
-        |> Seq.map(fun dir -> fun () ->
-            let args =
-                [
-                ] |> String.concat " "
-            DotNet.restore(fun c ->
-                { c with
-                    Common =
-                        c.Common
-                        |> DotNet.Options.withCustomParams
-                            (Some(args))
-                }) dir)
-        |> Seq.iter(retryIfInCI 2)
-        let args =
-            [
-                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
-                "--no-restore"
-            ]
-        DotNet.build(fun c ->
-            { c with
-                Configuration = configuration (ctx.Context.AllExecutingTargets)
-                Common =
-                    c.Common
-                    |> DotNet.Options.withAdditionalArgs args
-
-            }) proj
-
-        Fake.JavaScript.Npm.exec "run build" ( fun o ->
-            { o with
-                    WorkingDirectory = "ExampleProject/Example.Client"
-            }
-        )
-
-    let publishExampleProject ctx =
-        let proj = "ExampleProject/Example/Example.fsproj"
-        [proj]
-        |> Seq.map(fun dir -> fun () ->
-            let args =
-                [
-                ] |> String.concat " "
-            DotNet.restore(fun c ->
-                { c with
-                    Common =
-                        c.Common
-                        |> DotNet.Options.withCustomParams
-                            (Some(args))
-                }) dir)
-        |> Seq.iter(retryIfInCI 2)
-        let args =
-            [
-                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
-            ]
-        DotNet.publish(fun c ->
-            { c with
-                Configuration = configuration (ctx.Context.AllExecutingTargets)
-                Common =
-                    c.Common
-                    |> DotNet.Options.withAdditionalArgs args
-                Runtime = Some "osx-x64"
-            }) proj
-
-        Shell.cleanDir "ExampleProject/Example/publish"
-
-        let configuration = configuration (ctx.Context.AllExecutingTargets)
-        let configurationStr = configuration.ToString()
-
-        Shell.copyDir
-            "ExampleProject/Example/publish"
-            ("ExampleProject/Example/bin" @@ configurationStr @@ "net5.0/osx-x64/publish")
-            (fun _ -> true)
-
-
-    let packageExampleProject ctx =
-        Shell.cleanDir examplePluginPath
-        // copy all root files
-        let clientSrc = "./ExampleProject/Example.Client"
-        Shell.copy
-            examplePluginPath
-            [
-                clientSrc @@ "manifest.json"
-            ]
-
-        //copy the property inspector files
-        Shell.copy
-            (examplePluginPath @@ "propertyinspector")
-            [
-               clientSrc @@ "public" @@ "index.html"
-               clientSrc @@ "public" @@ "sdpi.css"
-               clientSrc @@ "public" @@ "bundle.js"
-            ]
-
-        let codeSrc = "./ExampleProject/Example"
-        Shell.copyDir
-            (examplePluginPath @@ "code")
-            (codeSrc @@ "publish")
-            (fun _ -> true)
-
-        ()
-
-    let macDeployExampleProject ctx =
-        let pluginPath =
-            "~/Application Support/com.elgato.StreamDeck/Plugins/org.StreamDeckDotnet.Example.sdPlugin"
-        Shell.cleanDir pluginPath
-
-        Shell.copyDir
-            pluginPath
-            "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
-            (fun _ -> true)
-
-
     let buildGuidGenerator ctx =
         let proj = "ExampleProject/GuidGenerator/GuidGenerator.fsproj"
         [proj]
@@ -694,6 +588,40 @@ module ExampleProject =
                 Runtime = Some "osx-x64"
             }) proj
 
+        // the build script in webpack sets up a watch, while prod publishes in production mode
+        Fake.JavaScript.Npm.exec "run prod" ( fun o ->
+            { o with
+                    WorkingDirectory = "ExampleProject/GuidGenerator.Client"
+            }
+        )
+
+    let publishGuidGenerator ctx =
+        Shell.cleanDir guidGenPluginPath
+        // publish the plugin
+        let proj = "ExampleProject/GuidGenerator/GuidGenerator.fsproj"
+        [proj]
+        |> Seq.map (fun projDir -> fun () ->
+            let args = ""
+            DotNet.restore (fun c ->
+              { c with
+                  Common = c.Common |> DotNet.Options.withCustomParams(Some(args))
+              }) projDir
+        )
+        |> Seq.iter (retryIfInCI 2)
+        let args =
+            [
+                sprintf "/p:PackageVersion=%s" latestEntry.NuGetVersion
+            ]
+        DotNet.publish(fun c ->
+            { c with
+                Configuration = configuration (ctx.Context.AllExecutingTargets)
+                Common =
+                    c.Common
+                    |> DotNet.Options.withAdditionalArgs args
+                Runtime = Some "osx-x64"
+            }) proj
+
+        // copy the publish to a "publish" folder
         Shell.cleanDir "ExampleProject/GuidGenerator/publish"
 
         let configuration = configuration (ctx.Context.AllExecutingTargets)
@@ -704,9 +632,8 @@ module ExampleProject =
             ("ExampleProject/GuidGenerator/bin" @@ configurationStr @@ "net5.0/osx-x64/publish")
             (fun _ -> true)
 
-    let publishGuidGenerator ctx =
-        Shell.cleanDir guidGenPluginPath
-        // copy all root files
+
+        // copy the root files for the property inspector
         let clientSrc = "./ExampleProject/GuidGenerator.Client"
         Shell.copy
             guidGenPluginPath
@@ -714,7 +641,7 @@ module ExampleProject =
                 clientSrc @@ "manifest.json"
             ]
 
-        //copy the property inspector files
+        // copy the property inspector files
         Shell.copy
             (guidGenPluginPath @@ "propertyinspector")
             [
@@ -783,7 +710,7 @@ let generateAssemblyInfo _ =
             AssemblyInfo.Metadata("GitHash", Git.Information.getCurrentSHA1(null))
         ]
 
-    let getProjectDetails projectPath =
+    let getProjectDetails (projectPath : string) =
         let projectName = IO.Path.GetFileNameWithoutExtension(projectPath)
         (
             projectPath,
@@ -921,10 +848,6 @@ Target.create "UpdateChangelog" updateChangelog
 Target.createBuildFailure "RevertChangelog" revertChangelog  // Do NOT put this in the dependency chain
 Target.createFinal "DeleteChangelogBackupFile" deleteChangelogBackupFile  // Do NOT put this in the dependency chain
 Target.create "DotnetBuild" dotnetBuild
-Target.create "BuildExample" ExampleProject.buildExample
-Target.create "PublishExample" ExampleProject.publishExampleProject
-Target.create "PackageExample" ExampleProject.packageExampleProject
-Target.create "DeployExample" ExampleProject.macDeployExampleProject
 Target.create "BuildGuidGenerator" ExampleProject.buildGuidGenerator
 Target.create "PublishGuidGenerator" ExampleProject.publishGuidGenerator
 Target.create "PackageGuidGenerator" ExampleProject.packageGuidGenerator
@@ -977,18 +900,11 @@ Target.create "ReleaseDocs" releaseDocs
 "ReplaceTemplateFilesNamespace"
     ==> "DotnetBuild"
 
-"DotnetBuild" ==> "BuildExample"
-
 "Clean"
     ==> "DotnetRestore"
     ==> "DotnetBuild"
-    ==> "BuildExample"
+    ==> "BuildGuidGenerator"
     ==> "RunMimic"
-
-"BuildExample"
-    ==> "PublishExample"
-    ==> "PackageExample"
-    ==> "DeployExample"
 
 "BuildGuidGenerator"
     ==> "PublishGuidGenerator"

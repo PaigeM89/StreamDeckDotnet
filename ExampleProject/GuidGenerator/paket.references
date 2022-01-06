@@ -1,3 +1,5 @@
 FSharp.Core
 Thoth.Json.Net
 TextCopy
+Serilog.Settings.Configuration
+Serilog.Sinks.File

@@ -27,12 +27,12 @@ module TestHelpers =
     }
 
     let emptyContext = EventContext( EventMetadataModule.empty()  )
-    let withEvent name : EventContext = 
+    let withEvent name : EventContext =
         let ar = { EventMetadataModule.empty() with Event = name}
         EventContext(ar)
     let next = fun (ctx : EventContext) ->  Some ctx |> Async.lift
 
-    let runTest route next ctx = 
+    let runTest route next ctx =
         async {
             match! next ctx with
             | Some ctx -> return! route next ctx
@@ -41,7 +41,7 @@ module TestHelpers =
 
     let printContextLogEvents (ctx: EventContext) =
         ctx.GetEventsToSend()
-        |> List.map (fun x -> 
+        |> List.map (fun x ->
             match x with
             | EventSent.LogMessage { Message = payload } -> payload.ToString()
             | _ -> ""
@@ -69,9 +69,9 @@ module RoutingEngineTests =
                 match output with
                 | Some ctx ->
                     let outputEvents = (ctx.GetEventsToSend()) |> List.map (fun x -> x.ToString())
-                    Expect.equal 
-                        (Seq.length outputEvents) 
-                        0 
+                    Expect.equal
+                        (Seq.length outputEvents)
+                        0
                         (sprintf "Should not find events to send, but found %A.\nThis means it logged an error." outputEvents)
                 | None -> failwith "Did not find context when it should have"
 
@@ -80,7 +80,7 @@ module RoutingEngineTests =
                 let route = eventMatch "action1"
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context back"
-            
+
             testCase "Action route filters based on action name - non matching" <| fun _ ->
                 let ctx = withEvent "action1"
                 let route = eventMatch "action2"
@@ -102,22 +102,27 @@ module RoutingEngineTests =
                 let output = runTest route next ctx
                 match output with
                 | Some ctx ->
-                    let expected = [ "node1"; "node2" ]
+                    let expected = [ "node2"; "node1" ]
                     let actual = printContextLogEvents ctx
                     Expect.equal actual expected "Should have visited all nodes with logging."
                 | None -> failwith "Did not find context when it should have"
-                
-            testCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
-                let ctx = withEvent "action1"
+
+            ftestCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
+                let ctx = withEvent EventNames.SystemDidWakeUp  //pick a payload-less event
                 let route = choose [
-                    eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 1: {x}" |> Core.flow next)
+                    // bind that event successfully (because it has no payload)
+                    eventMatch EventNames.SystemDidWakeUp  >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 1: {x}" |> Core.flow next)
                     eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 2: {x}" |>  Core.flow next)
                 ]
                 let output = runTest route next ctx
                 Expect.isSome output "Should still get a context"
+                let ctxOutput = output.Value
+                let outputEvents = printContextLogEvents ctxOutput
+                let expected = [ "action 1: SystemDidWakeUp" ]
+                Expect.equal outputEvents expected "Should get expected log event"
 
             testCase "Inspect multiple routes picks based on action - action2" <| fun _ ->
-                let ctx = withEvent "action2"
+                let ctx = withEvent "action1"
                 let route = choose [
                     eventMatch "action1" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |>  addLogToContext $"action 1: {x}" |>  Core.flow next)
                     eventMatch "action2" >=> tryBindEvent errorHandler (fun x next ctx -> ctx |> addLogToContext $"action 2: {x}" |>  Core.flow next)
@@ -156,7 +161,7 @@ module ContextSendEventTests =
                 let outputEvents = ctx.GetEventsToSend()
                 Expect.equal outputEvents [] "Should not have generated any events to send"
             | None -> failwith "Did not find context when it should have"
-        testCase "Adding 2 events returns those events in the insert order" <| fun _ ->
+        testCase "Adding 2 events returns those events in the reverse insert order" <| fun _ ->
             let ctx = withEvent action
             let route =
                 eventMatch action >=> Core.log "node1"  >=> Core.log "node2" >=> Core.log "node3"
@@ -164,6 +169,47 @@ module ContextSendEventTests =
             match output with
             | Some ctx ->
                 let actual = printContextLogEvents ctx
-                Expect.equal actual [ "node1"; "node2"; "node3" ] "Should not have generated any events to send"
+                Expect.equal actual [ "node3"; "node2"; "node1" ] "Should not have generated any events to send"
             | None -> failwith "Did not find context when it should have"
     ]
+
+module DotnetClientTests =
+  open TestHelpers
+  open StreamDeckDotnet
+
+  let runToResult ar = ar |> Async.RunSynchronously
+
+  /// Tests that make sure the socket message handler processes events
+  [<Tests>]
+  let tests = testList "Socket message handler tests" [
+    testCase "Empty routes processes empty message" <| fun _ ->
+      let routes = choose []
+      let msg = """{ "event": "invalidEventName" }"""
+      let result = socketMsgHandler routes msg |> runToResult
+      match result with
+      | Ok ctx ->
+        Expect.equal (ctx.GetEventsToSend()) [] "Should not get any events to be sent"
+      | Error e -> Expect.isTrue false (sprintf "Expected to process route, instead got error %A" e)
+    testCase "Routes process empty message" <| fun _ ->
+      let routes = choose [
+        KEY_DOWN >=> tryBindKeyDownEvent (fun _ -> Core.log("Error handler")) (fun payload next ctx -> next ctx)
+      ]
+      let msg = """{ "event": "invalidEventName" }"""
+      let result = socketMsgHandler routes msg |> runToResult
+      match result with
+      | Ok ctx ->
+        Expect.equal (ctx.GetEventsToSend()) [] "Should not get any events to be sent"
+      | Error e -> Expect.isTrue false (sprintf "Expected to process route, instead got error %A" e)
+    testCase "Routes process empty message with error handling" <| fun _ ->
+      let routes = choose [
+        // removing the KEY_DOWN check should cause the error handler to fire
+        tryBindKeyDownEvent (fun _ -> Core.log("Error handler")) (fun payload next ctx -> next ctx)
+      ]
+      let msg = """{ "event": "invalidEventName" }"""
+      let result = socketMsgHandler routes msg |> runToResult
+      match result with
+      | Ok ctx ->
+        let expected = [ Types.Sent.LogMessage { Message = "Error handler" } ]
+        Expect.equal (ctx.GetEventsToSend()) expected "Should get a log event to be sent"
+      | Error e -> Expect.isTrue false (sprintf "Expected to process route, instead got error %A" e)
+  ]

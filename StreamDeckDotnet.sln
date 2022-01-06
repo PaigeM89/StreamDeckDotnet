@@ -23,6 +23,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GuidGenerator", "ExamplePro
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "StreamDeckDotnet.Library", "src\StreamDeckDotnet.Library\StreamDeckDotnet.Library.fsproj", "{B8729AE8-260C-4FFD-BDB8-8143B428D87C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExampleProject", "ExampleProject", "{6BBD523F-80B8-4AB5-8FE4-58627390849B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

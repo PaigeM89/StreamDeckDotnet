@@ -2,10 +2,14 @@ namespace StreamDeckDotnet
 
 [<AutoOpen>]
 module Context =
+  open System
   open Types
   open Types.Sent
   open Types.Received
   open FsToolkit.ErrorHandling
+  open StreamDeckDotnet
+  open StreamDeckDotnet.Logging
+  open StreamDeckDotnet.Logging.Operators
   #if FABLE_COMPILER
   open Thoth.Json
   #else
@@ -13,10 +17,7 @@ module Context =
   #endif
   open System.Collections.Concurrent
 
-  // open StreamDeckDotnet.Logging
-  // open StreamDeckDotnet.Logger.Operators
-
-  // let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Context")
+  let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Context")
 
   /// A failure in the event pipeline to handle an event.
   /// This is only returned if the Context is expected to evaluate but does not.
@@ -48,14 +49,18 @@ module Context =
   }
 
   /// A function that accepts a string and returns a result, or a string error message.
+  [<Obsolete()>]
   type DecodeFunc<'a> = string -> Result<'a, string>
+
+  /// A function that accepts a JsonValue and returns a result of the decoded value or a string error message.
+  type JsonDecodeFunc<'a> = JsonValue -> Result<'a, string>
 
   /// Denotes an instance where a decode function may be needed
   type Decoding<'a> =
   /// A function to decode a specific payload, and that payload (if present)
   //| PayloadRequired of decodeFunc : DecodeFunc<'a> * payload : string option
-  | PayloadRequired of decodeFunc : DecodeFunc<'a> * payload : JsonValue option
-  | JsonPayloadRequired of (JsonValue -> Result<'a, string>) *  payload : JsonValue option
+  /// A function to decode a specific payload, and the payload to decode (if present)
+  | PayloadRequired of decodeFunc : JsonDecodeFunc<'a> * payload : JsonValue option
   /// An `EventReceived` that does not require a payload.
   | NoPayloadRequired of EventReceived
 
@@ -65,23 +70,11 @@ module Context =
     | PayloadRequired (func, payload) ->
       match payload with
       | Some p ->
-        // !! "Attempting to decode payload '{payload}'"
-        // >>!+ ("payload", (string payload))
-        // |> logger.info
-        p |> string |> func |> mapDecodeError (string p)
-      | None -> PayloadMissing |> Error
-    | JsonPayloadRequired (func, payload) ->
-      match payload with
-      | Some p ->
-        // !! "Attempting to decode json payload '{payload}'"
-        // >>!+ ("payload", (string payload))
-        // |> logger.info
+        !!! "Attempting to decode payload '{payload}'"
+        >>!+ ("payload", (Json.anyOptionToString payload))
+        |> logger.info
         p |> func |> mapDecodeError (string p)
       | None -> PayloadMissing |> Error
-    // | PayloadRequiredJT (func, payload) ->
-    //   match payload with
-    //   | Some jt -> func jt |> mapDecodeError jt
-    //   | None -> PayloadMissing |> Error
     | NoPayloadRequired e -> Ok e
 
   /// The metadata associated and generated when an event is sent from StreamDeck.
@@ -89,7 +82,6 @@ module Context =
   type EventContext(eventMetadata : EventMetadata) =
     let mutable _eventReceived : EventReceived option = None
     let mutable _eventsToSend : EventSent list option = None
-    //let mutable _sendEventQueue : ConcurrentQueue<EventSent > = new ConcurrentQueue<EventSent>()
 
     /// The `EventMetadata` that was sent from StreamDeck.
     member _.EventMetadata = eventMetadata
@@ -177,57 +169,49 @@ module Context =
               #endif
         | InvariantEqual EventNames.SendToPropertyInspector ->
           fun p ->
-            printfn "Matched against 'sendToPropertyInspector'"
             match p with
             | Some payload ->
-              string payload |> printfn "found payload %A"
               payload |> SendToPropertyInspector |> Ok
             | None ->
-              printfn "no payload found"
               #if FABLE_COMPILER
+              // fable can handle nulls
               null |> SendToPropertyInspector |> Ok
               #else
+              // but regular F# parsing wants an empty object
               JsonValue.Parse("{}") |> SendToPropertyInspector |> Ok
               #endif
         | _ ->
           fun _ -> UnknownEventType event |> Error
-      (string eventMetadata.Payload) |> printfn "Attempting to decode payload: %A"
+      (StreamDeckDotnet.Json.anyOptionToString eventMetadata.Payload) |> printfn "Attempting to decode payload: %A"
       return! decoder eventMetadata.Payload
     }
 
     /// Add the given `EventSent` to the event queue to send back to StreamDeck.
     member _.AddSendEvent e =
-      //_sendEventQueue.Enqueue(e)
       match _eventsToSend with
       | None ->
         _eventsToSend <- Some [e]
       | Some es ->
         _eventsToSend <- Some (e :: es)
 
+    /// <summary>
     /// Adds the given log message to the event queue.
+    /// </summary>
+    /// <param name="msg">The string message to add as a log.</param>
+    /// <returns>unit</returns>
     member this.AddLog msg =
       let log = createLogEvent msg
       this.AddSendEvent log
-      //_sendEventQueue.Enqueue(log)
 
     /// Adds a "Show Ok" event to the event queue.
     member this.AddOk() =
       let ok = createOkEvent()
-      //_sendEventQueue.Enqueue(ok)
       this.AddSendEvent ok
 
     /// Adds a "Show Alert" event to the event queue.
     member this.AddAlert() =
       let ohno = createAlertEvent()
-      //_sendEventQueue.Enqueue(ohno)
       this.AddSendEvent ohno
-
-    /// Returns a list of the events that will be sent to StreamDeck.
-    [<System.Obsolete("Use the event queue")>]
-    member _.GetEventsToSendFromList() =
-      match _eventsToSend with
-      | Some x -> x
-      | None -> []
 
     /// Returns a list of the events that will be sent to StreamDeck, in the order they were added.
     /// This is called at the end of event processing, when getting the list of events to send to the stream deck.
@@ -235,7 +219,6 @@ module Context =
       match _eventsToSend with
       | Some x -> x
       | None -> []
-      //_sendEventQueue.ToArray() |> List.ofArray
 
 
     member this.GetEncodedEventsToSend() =
@@ -249,17 +232,10 @@ module Context =
       )
 
     /// Removes all queued events that match the given predicate.
-    member _.PurgeEventsMatching f =
+    member _.PurgeEventsMatching predicate =
       match _eventsToSend with
-      | Some x -> _eventsToSend <- List.filter f x |> Some
+      | Some x -> _eventsToSend <- List.filter predicate x |> Some
       | None -> ()
-      /// there has to be a better way to do this.
-      // let filteredEvents =
-      //   _sendEventQueue.ToArray()
-      //   |> Array.filter (fun x -> f x |> not)
-      // // clear the queue by making a new one
-      // _sendEventQueue <- new ConcurrentQueue<_>()
-      // filteredEvents |> Array.iter (fun x -> _sendEventQueue.Enqueue x)
 
     /// Returns the Guid of the Context, or None if it was not bound.
     member this.TryGetContextGuid() =

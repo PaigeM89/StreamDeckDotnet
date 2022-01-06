@@ -34,7 +34,7 @@ module Websockets =
   // StreamDeck launches the plugin with these details
   // -port [number] -pluginUUID [GUID] -registerEvent [string?] -info [json]
   type StreamDeckConnection(args : StreamDeckSocketArgs,
-                            receiveHandler : string -> Async<Context.EventContext>,
+                            receiveHandler : string -> Async<Result<Context.EventContext, string>>,
                             registrationHandler : unit -> string) =
 
       // https://github.com/TheAngryByrd/FSharp.Control.WebSockets/blob/master/src/FSharp.Control.Websockets/FSharp.Control.Websockets.fs
@@ -156,8 +156,14 @@ module Websockets =
               match msg with
               | Ok (WebSocket.ReceiveUTF8Result.String msgText) ->
                 !!! "Received message of {msg} from web socket" >>!- ("msg", msgText) |> logger.info
-                let! ctx = receiveHandler (msgText)
-                do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
+                let! ctxResult = receiveHandler (msgText)
+                match ctxResult with
+                | Ok ctx ->
+                  do! ctx.GetEncodedEventsToSend() |> this.SendAllToSocketAsync
+                | Error e ->
+                  !!! "Unable to send messages to socket due to context error: {err}"
+                  >>!+ ("err", e)
+                  |> logger.error
               | Ok (WebSocket.ReceiveUTF8Result.Closed (status, description)) ->
                 !!! "Received closed receive message from web socket. Status: {status}. Description: {desc}"
                 >>!+ ("status", status)

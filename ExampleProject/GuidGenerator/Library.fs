@@ -7,13 +7,15 @@ open StreamDeckDotnet.EventBinders
 open Thoth.Json.Net
 open TextCopy
 
-(*
-  Todo: store the last guid in something so that it appears when the user _selects_ the plugin,
-        not just has the plugin already open in the PI.
-*)
+open Serilog
+open Serilog.Context
+open Serilog.Sinks.File
+
+/// Store the last guid we generated so we can fetch it when the PI appears
+let mutable lastGuid = Guid.Empty
 
 /// Add a Property Inspector event so we can update the Property Inspector with the newly
-/// generated GUID.
+/// generated GUID. This will only be handled by the PI while it's currently open in the Stream Deck Application.
 let addPIEvent (g : Guid) (ctx : EventContext) =
   let piSettings = GuidGenerator.SharedTypes.PropertyInspectorSettings.Create g
   let event = piSettings.Encode() |> SendToPropertyInspector
@@ -21,9 +23,15 @@ let addPIEvent (g : Guid) (ctx : EventContext) =
 
 /// Handle the KEY_DOWN action. Generates a random GUID and adds it to the clip board.
 let keyDownHandler keyPayload next (ctx : EventContext) =  async {
-  let guid = Guid.NewGuid()
-  ClipboardService.SetText(string guid)
-  addPIEvent guid ctx
+  lastGuid <- Guid.NewGuid()
+  ClipboardService.SetText(string lastGuid)
+  addPIEvent lastGuid ctx
+  return! next ctx
+}
+
+/// When the property inspector appears, we need to send the last generated guid
+let propertyInspectorDidAppearHandler () next (ctx : EventContext) = async {
+  addPIEvent lastGuid ctx
   return! next ctx
 }
 
@@ -31,13 +39,24 @@ let keyDownHandler keyPayload next (ctx : EventContext) =  async {
 let errorHandler (err : PipelineFailure) : EventHandler =
   Core.log($"Error handling event: %A{err}")
 
-/// The routes we'll handle - we only care about one event.
+/// The routes we'll handle
 let routes : EventRoute = choose [
+  // When the user hits the stream deck button, generate a guid on the clip board.
   KEY_DOWN >=> tryBindKeyDownEvent errorHandler keyDownHandler >=> showOk
+  // When the user opens up the property inspector, we want to display the last generated guid.
+  PROPERTY_INSPECTOR_DID_APPEAR >=> tryBindPropertyInspectorDidAppearEvent errorHandler propertyInspectorDidAppearHandler
 ]
 
 [<EntryPoint>]
 let main argv =
+  let log =
+    LoggerConfiguration()
+      .MinimumLevel.Verbose()
+      .WriteTo.File("log.txt", rollingInterval = RollingInterval.Day)
+      .Enrich.FromLogContext()
+      .CreateLogger()
+  Log.Logger <- log
+
   // parse out streamdeck args
   let args = ArgsParsing.parseArgs argv
 

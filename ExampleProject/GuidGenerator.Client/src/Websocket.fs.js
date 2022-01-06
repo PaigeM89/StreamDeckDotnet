@@ -1,24 +1,35 @@
-import { toConsole, printf, toText } from "./.fable/fable-library.3.1.15/String.js";
-import { Convert_fromJson, Fable_SimpleJson_Json__Json_stringify_Static_4E60E31B } from "./.fable/Fable.SimpleJson.3.21.0/Json.Converter.fs.js";
-import { reverse, iterate, cons, empty } from "./.fable/fable-library.3.1.15/List.js";
-import { toString, FSharpRef } from "./.fable/fable-library.3.1.15/Types.js";
-import { string_type, class_type } from "./.fable/fable-library.3.1.15/Reflection.js";
-import { FSharpResult$2 } from "./.fable/fable-library.3.1.15/Choice.js";
-import { SimpleJson_parseNative } from "./.fable/Fable.SimpleJson.3.21.0/SimpleJson.fs.js";
-import { createTypeInfo } from "./.fable/Fable.SimpleJson.3.21.0/TypeInfo.Converter.fs.js";
-import { startAsPromise } from "./.fable/fable-library.3.1.15/Async.js";
-import { EventContext__GetEncodedEventsToSend } from "../../../src/StreamDeckDotnet/Context.fs.js";
+import { toConsole, printf, toText } from "./fable_modules/fable-library.3.6.3/String.js";
+import { Convert_serialize } from "./fable_modules/Fable.SimpleJson.3.21.0/Json.Converter.fs.js";
+import { createTypeInfo } from "./fable_modules/Fable.SimpleJson.3.21.0/TypeInfo.Converter.fs.js";
+import { anonRecord_type, class_type, string_type } from "./fable_modules/fable-library.3.6.3/Reflection.js";
+import { singleton } from "./fable_modules/fable-library.3.6.3/AsyncBuilder.js";
+import { reverse, cons, empty, iterate } from "./fable_modules/fable-library.3.6.3/List.js";
+import { EventContext__GetEncodedEventsToSend } from "../../../src/StreamDeckDotnet.Library/Context.fs.js";
+import { toString, FSharpRef } from "./fable_modules/fable-library.3.6.3/Types.js";
+import { startAsPromise } from "./fable_modules/fable-library.3.6.3/Async.js";
 
 export function getWebsocketServerUrl(port) {
     return toText(printf("ws://127.0.0.1:%i"))(port);
 }
 
 export function getRegisterWebsocket(uuid) {
-    const json = {
+    return Convert_serialize({
         event: "registerPropertyInspector",
         uuid: uuid,
-    };
-    return Fable_SimpleJson_Json__Json_stringify_Static_4E60E31B(json);
+    }, createTypeInfo(anonRecord_type(["event", string_type], ["uuid", class_type("System.Guid")])));
+}
+
+export function handleMessage(messageHandler, responseHandler, input) {
+    return singleton.Delay(() => singleton.Bind(messageHandler(input), (_arg1) => {
+        const ctxResponse = _arg1;
+        if (ctxResponse.tag === 1) {
+            return singleton.Return();
+        }
+        else {
+            iterate(responseHandler, EventContext__GetEncodedEventsToSend(ctxResponse.fields[0]));
+            return singleton.Zero();
+        }
+    }));
 }
 
 export class Websocket {
@@ -41,14 +52,12 @@ export function Websocket_$ctor_Z6ACAEAE2(port, uuid, messageHandler) {
 }
 
 export function Websocket__IsOpen(this$) {
-    toConsole(printf("in IsOpen func"));
     const matchValue = this$.wsref.contents;
     if (matchValue == null) {
         return false;
     }
     else {
-        const ws = matchValue;
-        return ws.readyState === 1;
+        return matchValue.readyState === 1;
     }
 }
 
@@ -59,90 +68,52 @@ export function Websocket__SendToSocket_Z721C83C5(this$, payload) {
         }
         else {
             const ws = matchValue;
-            const payload_1 = Fable_SimpleJson_Json__Json_stringify_Static_4E60E31B(payload);
+            const payload_1 = Convert_serialize(payload, createTypeInfo(string_type));
             toConsole(printf("websocket sending \"%s\""))(payload_1);
             ws.send(payload_1);
         }
     }
     else {
-        const payload_2 = Fable_SimpleJson_Json__Json_stringify_Static_4E60E31B(payload);
+        const payload_2 = Convert_serialize(payload, createTypeInfo(string_type));
         this$.msgQueue = cons(payload_2, this$.msgQueue);
     }
 }
 
 function Websocket__createWebsocket(this$) {
     const connect = (timeout, server) => {
-        toConsole(printf("attempting to connect web socket to %s with timeout %i..."))(server)(timeout);
         const matchValue = this$.wsref.contents;
         if (matchValue == null) {
             const socket = new WebSocket(server);
             this$.wsref.contents = socket;
-            socket.onerror = ((_arg1) => {
-                toConsole(printf("Socket had error!"));
+            socket.onerror = ((e) => {
+                toConsole(printf("Socket had error: %A"))(e);
             });
-            socket.onopen = ((e) => {
-                const arg10_1 = e.currentTarget;
+            socket.onopen = ((e_1) => {
+                const arg10_1 = toString(e_1.currentTarget);
                 toConsole(printf("Socket was opened, on open being called! Event Target: %A"))(arg10_1);
                 const registerPayload = getRegisterWebsocket(this$.uuid);
                 this$.msgQueue = cons(registerPayload, this$.msgQueue);
-                const arg10_2 = this$.msgQueue;
-                toConsole(printf("MsgQueue is %A"))(arg10_2);
+                toConsole(printf("Sending registration message"));
                 iterate((arg00) => {
                     socket.send(arg00);
                 }, reverse(this$.msgQueue));
             });
-            socket.onclose = ((_arg2) => {
+            socket.onclose = ((_arg1) => {
                 toConsole(printf("Socket was closed!"));
-                void window.setTimeout(() => {
+                window.setTimeout(() => {
                     connect(timeout, server);
                 }, timeout, void 0);
             });
-            socket.onmessage = ((e_1) => {
-                let inputJson, typeInfo;
-                toConsole(printf("socket.onmessage was called"));
-                let _arg1_1;
-                const input = toString(e_1.data);
-                try {
-                    _arg1_1 = (new FSharpResult$2(0, (inputJson = SimpleJson_parseNative(input), (typeInfo = createTypeInfo(string_type), Convert_fromJson(inputJson, typeInfo)))));
-                }
-                catch (ex) {
-                    _arg1_1 = (new FSharpResult$2(1, ex.message));
-                }
-                if (_arg1_1.tag === 0) {
-                    const msg = _arg1_1.fields[0];
-                    toConsole(printf("websocket msg is %A"))(msg);
-                    let pr_1;
-                    const pr = startAsPromise(this$.messageHandler(msg));
-                    pr_1 = (pr.then(((ctx) => {
-                        if (ctx.tag === 1) {
-                            const e_2 = ctx.fields[0];
-                            toConsole(printf("Error handling message: %A"))(e_2);
-                        }
-                        else {
-                            const ctx_1 = ctx.fields[0];
-                            iterate((arg00_2) => {
-                                socket.send(arg00_2);
-                            }, EventContext__GetEncodedEventsToSend(ctx_1));
-                        }
-                    })));
-                    pr_1.then();
-                }
-                else {
-                    toConsole(printf("could not parse message %A"))(e_1);
-                }
+            socket.onmessage = ((e_2) => {
+                const msg = toString(e_2.data);
+                toConsole(printf("raw message from socket is %s"))(msg);
+                const pr = startAsPromise(handleMessage(this$.messageHandler, (arg00_1) => {
+                    socket.send(arg00_1);
+                }, msg));
+                pr.then();
             });
         }
     };
     connect(60000, getWebsocketServerUrl(this$.port));
-    toConsole(printf("Websocket finished connect(), returning out of constructor"));
-    const matchValue_1 = this$.wsref.contents;
-    if (matchValue_1 == null) {
-        toConsole(printf("socket is none"));
-    }
-    else {
-        const ws = matchValue_1;
-        const arg10_6 = ws.readyState | 0;
-        toConsole(printf("Socket state is %A"))(arg10_6);
-    }
 }
 

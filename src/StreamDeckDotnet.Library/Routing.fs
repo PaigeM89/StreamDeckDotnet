@@ -54,7 +54,7 @@ module EventBinders =
 
   /// Attempts to bind the event received in the context to a `WillAppear` event, then runs the success handler.
   /// If the decoding or binding is not successful, the error handler is run.
-  let trybindWillAppearEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.AppearPayload -> EventHandler) =
+  let tryBindWillAppearEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : Received.AppearPayload -> EventHandler) =
     let filter (e : Received.EventReceived) =
       match e with
       | Received.EventReceived.WillAppear payload -> successHandler (payload)
@@ -154,7 +154,6 @@ module EventBinders =
   /// Attempts to bind the event received in the context to a `SendToPropertyInspector` event, then runs the success handler.
   /// If the decoding or binding is not successful, the error handler is run.
   let tryBindSendToPropertyInspectorEvent (errorHandler : Context.PipelineFailure -> EventHandler) (successHandler : JsonValue -> EventHandler) =
-    printfn "in try bind send to PI event"
     let filter (e : Received.EventReceived) =
       match e with
       | Received.EventReceived.SendToPropertyInspector payload -> successHandler (payload)
@@ -165,18 +164,8 @@ module EventBinders =
 [<AutoOpen>]
 module Routing =
   open StreamDeckDotnet
-  #if FABLE_COMPILER
-  open Thoth.Json
-  #else
-  open Thoth.Json.Net
-  #endif
 
   type EventRoute = EventFunc -> EventContext -> EventFuncResult
-
-  /// Routing that is only available once we have determined the payload type
-  /// TODO
-  module private PayloadRouting =
-    let multiAction() = true
 
   /// Accepts a function that takes the action context and validates if the action route is valid.
   let private appState (stateCheck: EventContext -> bool) =

@@ -2,11 +2,6 @@ namespace StreamDeckDotnet
 
 [<AutoOpen>]
 module Core =
-  #if !FABLE_COMPILER
-  open Thoth.Json.Net
-  #else
-  open Thoth.Json
-  #endif
   open StreamDeckDotnet.Logging
   open Context
   open Types
@@ -27,26 +22,27 @@ module Core =
   /// <see cref="EventFunc" /> or exit the pipeline early.
   type EventHandler = EventFunc -> EventFunc
 
-  #if FABLE_COMPILER
-  type ErrorHandler = exn -> EventHandler
-  #else
-  /// Takes a <see cref="System.Exception" /> object and an <see cref="StreamDeckDotnet.Logging.Logger"/> instance
-  /// to handle any uncaught errors. Returns an <see cref="EventHandler" />.
-  type ErrorHandler = exn -> Logger -> EventHandler
-  #endif
-
   /// Short circuit the pipeline and return None, exiting that pipeline's processing.
   let skipPipeline : EventFuncResult = Async.singleton None
 
   /// Stop evaluating the rest of the pipeline and return Some, causing the event to be successfully processed.
   let earlyReturn : EventFunc = Some >> Async.singleton
 
+  /// <summary>
   /// Combines two <see cref="EventHandler" /> functions into a single function.
+  /// </summary>
+  /// <remarks>
   /// Consider using the `>=>` operator as an easier alternative to this function.
+  /// </remarks>
   let compose (action1 : EventHandler) (action2 : EventHandler) : EventHandler =
     fun final -> final |> action2 |> action1
 
+  /// <summary>
   /// Combines two <see cref="EventHandler" /> functions into a single function.
+  /// </summary>
+  /// <remarks>
+  /// This operator is currently bugged in Fable.
+  /// </remarks>
   let (>=>) = compose
 
   let rec private chooseEventFunc (funcs : EventFunc list) : EventFunc =
@@ -83,13 +79,14 @@ module Core =
   /// If successful, the pipeline evaluation will continue.
   /// If not successful, the pipeline is skipped via `skipPipeline`.
   let validateEvent (validate: string -> bool) : EventHandler =
-    fun (next : EventFunc) (ctx : EventContext) ->
+    fun (next : EventFunc) (ctx : EventContext) -> async {
       let x = ctx.EventMetadata.Event
       if validate x
-      then next ctx
+      then
+        return! next ctx
       else
-        printfn "Validation failed, skipping pipeline"
-        skipPipeline
+        return! skipPipeline
+    }
 
   /// Validates the two given strings (assumed to be event names) to be equal, ignoring case.
   let validateAction (s : string) (t : string) =
@@ -157,7 +154,7 @@ module Core =
   /// Adds the passed message to the Logs in the context, with the event metadata added to the log, then continues processing.
   let logWithContext msg : EventHandler =
     fun next (ctx : EventContext) ->
-      let msg = msg + (sprintf "Event Metadata: %A" ctx.EventMetadata)
+      let msg = msg + (sprintf "\nEvent Metadata: %A" ctx.EventMetadata)
       addLogToContext msg ctx
       |> next
 

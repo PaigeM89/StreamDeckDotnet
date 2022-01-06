@@ -10,52 +10,41 @@ open GuidGenerator.SharedTypes
 open GuidGenerator.Websockets
 open Thoth.Json
 
-let dprintfn fmt msg =
-#if DEBUG
-  printfn fmt msg
-#else
-  ()
-#endif
-
 let updateLastGeneratedGuid (g : Guid) =
   let ele = document.getElementById "last-generated-guid-output" :?> HTMLInputElement
-  dprintfn "Setting element %A to value %A" ele g
   ele.value <- (string g)
 
-
 let decipherPayload (payload : JsonValue) =
-  dprintfn "raw payload in string form is %s" (string payload)
   let piSettingsResult : Result<PropertyInspectorSettings, string> =
     payload
-    |> Decode.fromValue "" GuidGenerator.SharedTypes.PropertyInspectorSettings.Decoder
+    |> Decode.fromValue "$" GuidGenerator.SharedTypes.PropertyInspectorSettings.Decoder
   match piSettingsResult with
   | Ok settings ->
-    dprintfn "parsed payload result is %A" (string settings)
+    printfn "Got custom property inspector settings: %A" settings
     updateLastGeneratedGuid settings.LastGeneratedGuid
   | Error e ->
-    dprintfn "Error decoding: %A" e
+    printfn "Error decoding: %A" e
     ()
 
+/// When the PI is open, and the button is pressed, this will handle the "send to PI"
+/// event and update the last generated guid field.
 let sendToPIHandler (payload : JsonValue) next ctx = async {
-    let msg = sprintf "In PI sendToPIHandler, string payload is %s" (string payload)
-    dprintfn "msg in send to pI handler is %A" msg
-    decipherPayload payload
-    return! next ctx
-}
-
-let genericEventHandler (event : Received.EventReceived) next ctx = async {
-  string event |> dprintfn "received unhandled event: %A"
-  let ctx = Core.addLogToContext ("Did not handle event in Guid Generator.Client but did make it to the generic handler.") ctx
+  printfn "in send to PI handler"
+  decipherPayload payload
   return! next ctx
 }
 
 let errorHandler (err: PipelineFailure) : EventHandler =
+    printfn "In PI error handler, err is %A" err
+    // i think this line will cause an error in the stream deck
     Core.log (sprintf "In PI error handler, err is : %A" err)
 
+/// We use `compose` here because there is currently a bug when using the `>=>` operator that causes
+/// the next function in the pipeline to not execute.
 let eventPipeline : EventRoute = choose [
-    tryBindSendToPropertyInspectorEvent errorHandler sendToPIHandler
-    tryBindEvent errorHandler genericEventHandler
-    Core.log "Did not handle event in Guid Generator.Client"
+    compose SEND_TO_PROPERTY_INSPECTOR (tryBindSendToPropertyInspectorEvent errorHandler sendToPIHandler)
+    // as mentioned above, the >=> operator is bugged in Fable
+    // SEND_TO_PROPERTY_INSPECTOR >=> tryBindSendToPropertyInspectorEvent errorHandler sendToPIHandler
 ]
 
 let mutable websocket : Websocket option = None
@@ -70,7 +59,7 @@ let connectStreamDeck
         (inInfo: string)
         (inActionInfo : string) =
 
-    //dprintfn
+    //printfn
     //     "Args are: inPort: %A\nInPI_UUID: %A\nregister Event: %s\ninfo: %s\n actionInfo: %s"
     //     inPort
     //     inPropertyInspectorUUID

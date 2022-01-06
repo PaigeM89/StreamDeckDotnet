@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "webpack --mode development"
+    "build": "webpack --mode development",
+    "prod": "webpack --mode production"
   },
   "name": "streamdeckdotnet-fable",
   "version": "0.1.0",

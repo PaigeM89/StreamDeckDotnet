@@ -10,7 +10,7 @@ module Client =
   let private logger = LogProvider.getLoggerByName("StreamDeckDotnet.Client")
 
   /// <summary>
-  /// Handles an individual message by decoding it to an <see cref="Types.EventMetada" /> instance and passing it to the
+  /// Handles an individual message by decoding it to an <see cref="Types.EventMetadata" /> instance and passing it to the
   /// given <see cref="Core.EventHandler" /> (usually a collection of routes created via <see cref="Core.choose" />). This returns an error
   /// if the given message was not able to be decoded into <see cref="Types.EventMetadata" /> instance.
   /// </summary>
@@ -92,7 +92,7 @@ module Client =
   /// </code>
   /// </example>
   type StreamDeckClient(args : Websockets.StreamDeckSocketArgs, handler : Core.EventHandler) =
-    let msgHandler = forceMessageHandling handler
+    let msgHandler = socketMsgHandler handler
     let registerHandler = handleSocketRegister args
 
     let _socket = Websockets.StreamDeckConnection(args, msgHandler, registerHandler)

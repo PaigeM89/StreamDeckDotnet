@@ -1,17 +1,17 @@
 {
   "scripts": {
     "start": "dotnet fable watch src --run webpack-dev-server",
+    "watch": "webpack --watch --mode development",
     "build": "webpack --mode development",
-    "prod": "webpack --mode production"
+    "fable": "dotnet fable src",
+    "prod": "dotnet fable src --run webpack --mode production"
   },
   "devDependencies": {
     "@babel/core": "^7.14.3",
-    "fable-compiler": "^2.13.0",
-    "fable-loader": "^2.1.9",
     "webpack": "^5.38.1",
-    "webpack-cli": "^4.7.0",
+    "webpack-cli": "^4.9.1",
     "webpack-dev-server": "^3.11.2"
-  }, 
+  },
   "name": "paigem89.guid.generator.plugin",
   "version": "0.1.0",
   "dependencies": {

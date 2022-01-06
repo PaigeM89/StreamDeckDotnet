@@ -2,6 +2,38 @@ namespace StreamDeckDotnet
 
 open System
 
+[<RequireQualifiedAccess>]
+module Json =
+#if FABLE_COMPILER
+  open Thoth.Json
+  open Fable.Core
+  open Fable.Core.JsInterop
+
+  [<Emit("JSON.stringify($0, null, 4) + ''")>]
+  let anyToString (_: JsonValue) : string = jsNative
+#else
+  open Thoth.Json.Net
+  open Newtonsoft.Json
+  open System.IO
+
+  let anyToString (token: JsonValue) : string =
+      if isNull token then "null"
+      else
+          use stream = new StringWriter(NewLine = "\n")
+          use jsonWriter = new JsonTextWriter(
+                                  stream,
+                                  Formatting = Formatting.Indented,
+                                  Indentation = 4 )
+
+          token.WriteTo(jsonWriter)
+          stream.ToString()
+#endif
+
+  let anyOptionToString (tokenOpt : JsonValue option) : string =
+    match tokenOpt with
+    | Some t -> anyToString t
+    | None -> "No value for token"
+
 module internal Encode =
 #if FABLE_COMPILER
   open Thoth.Json
@@ -31,17 +63,12 @@ module internal Decode =
 
 [<AutoOpen>]
 module Types =
-  // open Newtonsoft.Json
-  // open Newtonsoft.Json.Linq
 #if FABLE_COMPILER
   open Thoth.Json
 #else
   open Thoth.Json.Net
 #endif
   open FsToolkit.ErrorHandling
-  //open StreamDeckDotnet.Logging
-  // open StreamDeckDotnet.Logger
-  // open StreamDeckDotnet.Logger.Operators
 
   //let rec private logger = LogProvider.getLoggerByName "StreamDeckDotnet.Types"
     //LogProvider.getLoggerByQuotation <@ logger @>
@@ -107,20 +134,12 @@ module Types =
     let SendToPropertyInspector = "sendToPropertyInspector"
 
 
-
   /// Attempts to decode the payload to the target type constructer using the given Decoder.
   let tryDecodePayload decoder targetType payload =
     result {
-      let! payload = Decode.fromString decoder payload
+      let! payload = Decode.fromValue "$" decoder payload
       return targetType payload
     }
-
-  let tryDecodePayloadJson decoder targetType payload =
-    result {
-      let! payload = Decode.fromValue "" decoder payload
-      return targetType payload
-    }
-
 
   /// Stores all data & metadata relevant to an event recieved by streamdeck.
   /// Events to send back to streamdeck are stored in the context and are sent after the event is fully processed.
@@ -150,7 +169,6 @@ module Types =
           Device = get.Optional.Field "device" Decode.string
           // "decode" the payload as it is, keeping it a JsonValue
           Payload = get.Optional.Field "payload" Decode.JsonValue
-            //(Decode.object (fun token -> JsonValue.FromObject(token)))
         })
 
   /// Creates a new `EventMetadata` that is built from decoding the given string, or returns an error message on decode failure.
@@ -182,7 +200,6 @@ module Types =
       "event", Encode.string event
       // encode the payload as an object
       "payload", Encode.object payload
-      //yield! payload
     ]
 
   let encodeJsonWithWrapper (context: string option) (device : string option) event (payload : JsonValue) =
@@ -192,7 +209,6 @@ module Types =
       "event", Encode.string event
       // encode the payload as an object
       "payload", Encode.jsonObject payload
-      //yield! payload
     ]
 
   /// <summary>Events received from the stream deck.</summary>
