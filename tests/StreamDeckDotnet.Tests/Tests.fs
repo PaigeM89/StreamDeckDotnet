@@ -107,7 +107,7 @@ module RoutingEngineTests =
                     Expect.equal actual expected "Should have visited all nodes with logging."
                 | None -> failwith "Did not find context when it should have"
 
-            ftestCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
+            testCase "Inspect multiple routes picks based on action - action1" <| fun _ ->
                 let ctx = withEvent EventNames.SystemDidWakeUp  //pick a payload-less event
                 let route = choose [
                     // bind that event successfully (because it has no payload)
