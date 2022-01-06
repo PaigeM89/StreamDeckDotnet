@@ -13,7 +13,7 @@ let routes : EventRoute = choose [
     // functions can be added to the pipeline, like this logging function,
     // which appends a log to the context's events to send back to the Stream Deck
     KEY_DOWN >=> Core.log "in KEY_DOWN handler" >=> tryBindKeyDownEvent errorHandler keyDownHandler
-    WILL_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
+    PROPERTY_INSPECTOR_DID_APPEAR >=> Core.log "in WILL_APPEAR handler" >=> tryBindEvent errorHandler appearHandler
   ]
 ```
 
@@ -46,6 +46,8 @@ let main argv =
   client.Run()
 ```
 
+See the `ExampleProject` folder for a full example of a plugin, a Fable-based Property Inspector, and a shared data structure between them.
+
 ## Testing and developing a plugin
 
 On macOS:
@@ -66,48 +68,27 @@ Currently, the tool has barely any events implemented. Pull requests welcome! Th
 
 -----------------------------------------------
 
-# TODO
-
-Interesting log when exiting the stream deck application:
-```
-07:32:45.0706          void ESDCustomPlugin::QuitPlugin(): Plugin 'Example Plugin' is still alive after closing the websocket. Quit it.
-```
-
-## General
-
-* Test w/ software
-* Test w/ streamdeck
-
-## Example
-
-[ ] Figure out websockets in Elmish
-    * maybe try (Fable.Reaction)[https://fablereaction.readthedocs.io/en/latest/fable.reaction/getting_started.html] ?
-    * maybe the model shouldn't be aware of the socket? this might make building a subscription easier, since the socket can invoke it by updating the model. i think.
-[ ] And/Or Redo the example in react
+# Todos
 
 ## Mimic
 
-[ ] Set action state
-[ ] Set action coordinates
-[ ] Batch send events with delays
+- [ ] Set action state
+- [ ] Set action coordinates
+- [ ] Batch send events with delays
   * allows testing "double tap key" event types (as an example)
   * allows stress testing
-[ ] test multi instance & combine with batch send
-[ ] Save last command run
-[ ] Save/cache commands to run later 
-[ ] Load manifest(s) for actions
-[ ] Figure out packaging/distribution for consuming
-[ ] Figure out how to host the property inspector as well
+- [ ] test multi instance & combine with batch send
+- [ ] Save last command run
+- [ ] Save/cache commands to run later 
+- [ ] Load manifest(s) for actions
+- [ ] Figure out packaging/distribution for consuming
+- [ ] Figure out how to host the property inspector as well
     * [ ] Tie the plugin & the backend together
 
 ## SD.NET
 
-* [ ] Minimize deploy size, either as part of this package and/or as an example
-* Do we need some way to send events outside of handling events? eg, timer?
-
-## Documentation
-
-* start
+- [ ] Minimize deploy size, either as part of this package and/or as an example
+- Do we need some way to send events outside of handling events? eg, timer?
 
 ---
 
