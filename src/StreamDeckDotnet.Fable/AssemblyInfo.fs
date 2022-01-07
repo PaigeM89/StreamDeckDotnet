@@ -2,7 +2,7 @@
 namespace System
 open System.Reflection
 
-[<assembly: AssemblyTitleAttribute("StreamDeckDotnet")>]
+[<assembly: AssemblyTitleAttribute("StreamDeckDotnet.Fable")>]
 [<assembly: AssemblyProductAttribute("StreamDeckDotnet")>]
 [<assembly: AssemblyVersionAttribute("0.1.0")>]
 [<assembly: AssemblyMetadataAttribute("ReleaseDate","2022-01-07T00:00:00.0000000-05:00")>]
@@ -13,7 +13,7 @@ open System.Reflection
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] AssemblyTitle = "StreamDeckDotnet"
+    let [<Literal>] AssemblyTitle = "StreamDeckDotnet.Fable"
     let [<Literal>] AssemblyProduct = "StreamDeckDotnet"
     let [<Literal>] AssemblyVersion = "0.1.0"
     let [<Literal>] AssemblyMetadata_ReleaseDate = "2022-01-07T00:00:00.0000000-05:00"
