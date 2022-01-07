@@ -5,6 +5,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <Title>StreamDeckDotnet.Fable</Title>
+    <Description>StreamDeckDotnet.Fable helps you build event handling pipelines for custom Stream Deck property inspectors!</Description>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Client.fs" />
   </ItemGroup>

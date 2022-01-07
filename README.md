@@ -48,6 +48,13 @@ let main argv =
 
 See the `ExampleProject` folder for a full example of a plugin, a Fable-based Property Inspector, and a shared data structure between them.
 
+## NuGet 
+
+Package | Stable | Prerelease
+--- | --- | ---
+StreamDeckDotnet | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet)](https://www.nuget.org/packages/StreamDeckDotnet/) | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet?includePreReleases=true)](https://www.nuget.org/packages/StreamDeckDotnet/)
+StreamDeckDotnet.Fable | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet.Fable)](https://www.nuget.org/packages/StreamDeckDotnet.Fable/) | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet.Fable?includePreReleases=true)](https://www.nuget.org/packages/StreamDeckDotnet.Fable/)
+
 ## Testing and developing a plugin
 
 On macOS:
@@ -99,20 +106,13 @@ GitHub Actions |
 [![GitHub Actions](https://github.com/PaigeM89/StreamDeckDotnet/workflows/Build%20master/badge.svg)](https://github.com/PaigeM89/StreamDeckDotnet/actions?query=branch%3Amaster) |
 [![Build History](https://buildstats.info/github/chart/PaigeM89/StreamDeckDotnet)](https://github.com/PaigeM89/StreamDeckDotnet/actions?query=branch%3Amaster) |
 
-## NuGet 
-
-Package | Stable | Prerelease
---- | --- | ---
-StreamDeckDotnet | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet)](https://www.nuget.org/packages/StreamDeckDotnet/) | [![NuGet Badge](https://buildstats.info/nuget/StreamDeckDotnet?includePreReleases=true)](https://www.nuget.org/packages/StreamDeckDotnet/)
-
 ---
 
 ### Developing
 
 Make sure the following **requirements** are installed on your system:
 
-- [dotnet SDK](https://www.microsoft.com/net/download/core) 3.0 or higher
-- [Mono](http://www.mono-project.com/) if you're on Linux or macOS.
+- [dotnet SDK](https://www.microsoft.com/net/download/core) 5.0.404 or higher
 
 or
 

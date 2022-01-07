@@ -48,6 +48,9 @@ let environVarAsBoolOrDefault varName defaultValue =
 let productName = "StreamDeckDotnet"
 let sln = "StreamDeckDotnet.sln"
 
+let dotnetProject = "src/StreamDeckDotnet/StreamDeckDotnet.fsproj"
+let fableProject = "src/StreamDeckDotnet.Fable/StreamDeckDotnet.Fable.fsproj"
+
 
 let srcCodeGlob =
     !! (__SOURCE_DIRECTORY__  @@ "src/**/*.fs")
@@ -71,12 +74,10 @@ let distGlob = distDir @@ "*.nupkg"
 let coverageThresholdPercent = 50
 let coverageReportDir =  __SOURCE_DIRECTORY__  @@ "docs" @@ "coverage"
 
-
 let docsDir = __SOURCE_DIRECTORY__  @@ "docs"
 let docsSrcDir = __SOURCE_DIRECTORY__  @@ "docsSrc"
 let docsToolDir = __SOURCE_DIRECTORY__ @@ "docsTool"
 
-let examplePluginPath = __SOURCE_DIRECTORY__ @@ "ExampleProject/org.StreamDeckDotnet.Example.sdPlugin"
 let guidGenPluginPath = __SOURCE_DIRECTORY__ @@ "ExampleProject/org.PaigeM89.GuidGenerator.sdPlugin"
 
 let gitOwner = "PaigeM89"
@@ -84,7 +85,7 @@ let gitRepoName = "StreamDeckDotnet"
 
 let gitHubRepoUrl = sprintf "https://github.com/%s/%s" gitOwner gitRepoName
 
-let releaseBranch = "master"
+let releaseBranch = "main"
 
 let tagFromVersionNumber versionNumber = sprintf "v%s" versionNumber
 
@@ -471,10 +472,10 @@ let dotnetTest ctx =
     let args =
         [
             "--no-build"
-            sprintf "/p:AltCover=%b" (not disableCodeCoverage)
-            sprintf "/p:AltCoverThreshold=%d" coverageThresholdPercent
-            sprintf "/p:AltCoverAssemblyExcludeFilter=%s" excludeCoverage
-            "/p:AltCoverLocalSource=true"
+            // sprintf "/p:AltCover=%b" (not disableCodeCoverage)
+            // sprintf "/p:AltCoverThreshold=%d" coverageThresholdPercent
+            // sprintf "/p:AltCoverAssemblyExcludeFilter=%s" excludeCoverage
+            // "/p:AltCoverLocalSource=true"
         ]
     DotNet.test(fun c ->
 
@@ -743,7 +744,15 @@ let dotnetPack ctx =
             Common =
                 c.Common
                 |> DotNet.Options.withAdditionalArgs args
-        }) sln
+        }) dotnetProject
+    DotNet.pack (fun c ->
+        { c with
+            Configuration = configuration (ctx.Context.AllExecutingTargets)
+            OutputPath = Some distDir
+            Common =
+                c.Common
+                |> DotNet.Options.withAdditionalArgs args
+        }) fableProject
 
 let sourceLinkTest _ =
     !! distGlob
